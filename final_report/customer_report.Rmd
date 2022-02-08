@@ -1,0 +1,88 @@
+---
+title: Gene enrichment analysis
+author:
+  - Bioinformatics Core Facility, Centre for Molecular Medicine, CEITEC Masaryk University
+  - ^1^CEITEC-Central European Institute of Technology, Masaryk University, Kamenice 5, 625 00 Brno, Czech Republic
+  - Nicolas Blavet^1^ [nicolas.blavet@ceitec.muni.cz](mailto:nicolas.blavet@ceitec.muni.cz)
+
+output:
+  bookdown::html_document2:
+    highlight: tango
+    number_sections: no
+
+params:
+  config: snakemake.params.config
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+```{r load-packages, include=FALSE}
+library(data.table)
+library(jsonlite)
+library(flextable)
+library(stringr)
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+set_flextable_defaults(font.family = "Arial", font.size = 12, padding.top = 3, padding.bottom = 3)
+```
+
+```{r variables, results='asis', echo=FALSE}
+DE_FC <- "DE_feature_count"
+if(dir.exists("DE_RSEM") == TRUE){
+  var.rsem <- 1
+  DE_RSEM <- "DE_RSEM"
+}else{
+   var.rsem <- 0
+}
+
+`%!in%` <- Negate(`%in%`)
+```
+
+`r print(getwc())`
+
+# Acknowledgement
+
+- We request co-authorship (and will assist with manuscript preparation) if we have developed novel tools, algorithms, or pipelines, participated in experiment design planning, or have contributed to a biological question addressed in a manuscript. We ask that, at a minimum, you acknowledge us in a publication to which we have contributed routine analysis without further support and discussions, data management or conversion, or data submission services.
+- Core Facility Bioinformatics of CEITEC Masaryk University is gratefully acknowledged for the obtaining of the scientific data presented in this paper.
+
+# Description
+```{r, results='asis', echo=FALSE}
+config_json <- as.data.table(fromJSON(txt = params$config))
+config_json[,condition := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$condition)]
+  config_json[,tag       := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$tag)]
+  config_json[,full_name := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$sample_name)]
+
+comparison <- unique(config_json$comparison)
+biotype <- unique(config_json$biotype_list)
+
+DE <- ifelse(var.rsem == 1,c("DE_feature_count","DE_RSEM"),c("DE_feature_count"))
+
+# comparison_dt <- data.table()
+# for (d in DE){
+#   for(f in comparison){
+#     for(b in biotype){
+#       de <- fread(paste0("../results/",d,"/",f,"/",b,"/","DESeq2.tsv"),header = T)
+#       colnames(de)[colnames(de) == 'V1'] <- 'Geneid' # In case we need to rename
+#       ## filter genes
+#       deseq_cutoff <- function(deseq = de, LOG2FC = 0, PADJ = 1){
+#         x <- deseq[is.na(padj) == F & is.na(pvalue) == F,]
+#         x <- x[abs(log2FoldChange) >= LOG2FC & padj <= PADJ,]
+#         return(x)
+#       }
+#       deseq2_enrich <- deseq_cutoff(de, as.numeric(config_json$cutoff_log2fc_enrich[1]), as.numeric(config_json$cutoff_padj_enrich[1]))
+#       deseq2_gsea <- deseq_cutoff(de, as.numeric(config_json$cutoff_log2fc_gsea[1]), as.numeric(config_json$cutoff_padj_gsea[1]))
+#
+#       # theComparison <- str_split(f,"/",simplify = T)[3]
+#       # theAnalysis <- str_split(f,"/",simplify = T)[2]
+#
+#       dt <- data.table(Analysis = d, Conditions = f, "Genes considered for Enrichment" = length(deseq2_enrich$Geneid), "Genes considered for GSEA" = length(deseq2_gsea$Geneid), "Total number of genes" = length(de$Geneid))
+#       comparison_dt <- rbind(comparison_dt, dt)
+#     }
+#   }
+# }
+
+species <- config_json$species[1]
+```
+
