@@ -1,5 +1,5 @@
 ---
-title: Gene enrichment analysis
+title: RNA-Seq and DE analysis
 author:
   - Bioinformatics Core Facility, Centre for Molecular Medicine, CEITEC Masaryk University
   - ^1^CEITEC-Central European Institute of Technology, Masaryk University, Kamenice 5, 625 00 Brno, Czech Republic
