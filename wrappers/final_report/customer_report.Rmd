@@ -57,7 +57,7 @@ config_json[,condition := sapply(1:length(config_json$samples),function(x) confi
 comparison <- unique(config_json$comparison)
 biotype <- unique(config_json$biotype_list)
 
-DE <- ifelse(var.rsem == 1,c("DE_feature_count","DE_RSEM"),c("DE_feature_count"))
+DE <- ifelse(var.rsem == 1,c("DE_RSEM"),c("DE_feature_count"))
 
 # comparison_dt <- data.table()
 # for (d in DE){
