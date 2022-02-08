@@ -5,7 +5,6 @@ import os
 from snakemake.shell import shell
 shell.executable("/bin/bash")
 log_filename = str(snakemake.log)
-config_filename = str(snakemake.params.config)
 
 f = open(log_filename, 'a+')
 f.write("\n##\n## RULE: final_report \n##\n")
@@ -15,7 +14,7 @@ command = " cp '"+os.path.abspath(os.path.dirname(__file__))+"/customer_report.R
 
 shell(command)
 
-command = """ Rscript -e "rmarkdown::render('customer_report/customer_report.Rmd', params=list(config = '""" + config_filename + """' ))" """ +\
+command = """ Rscript -e "rmarkdown::render('customer_report/customer_report.Rmd', params=list(config = '""" + snakemake.params.config + """' ))" """ +\
             " >> " + log_filename + " 2>&1 "
 
 f = open(log_filename, 'a+')
