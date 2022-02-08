@@ -1,10 +1,4 @@
 ---
-title: RNA-Seq and DE analysis
-author:
-  - Bioinformatics Core Facility, Centre for Molecular Medicine, CEITEC Masaryk University
-  - ^1^CEITEC-Central European Institute of Technology, Masaryk University, Kamenice 5, 625 00 Brno, Czech Republic
-  - Nicolas Blavet^1^ [nicolas.blavet@ceitec.muni.cz](mailto:nicolas.blavet@ceitec.muni.cz)
-
 output:
   bookdown::html_document2:
     highlight: tango
@@ -12,6 +6,16 @@ output:
 
 params:
   config: snakemake.params.config
+  set_author: snakemake.params.author
+  set_email: snakemake.params.email
+---
+
+---
+title: RNA-Seq and DE analysis
+author:
+  - Bioinformatics Core Facility, Centre for Molecular Medicine, CEITEC Masaryk University
+  - ^1^CEITEC-Central European Institute of Technology, Masaryk University, Kamenice 5, 625 00 Brno, Czech Republic
+  - `r params$set_author`^1^ [`r params$set_email`](mailto:`r params$set_email`)
 ---
 
 ```{r setup, include=FALSE}
@@ -29,18 +33,34 @@ set_flextable_defaults(font.family = "Arial", font.size = 12, padding.top = 3, p
 ```
 
 ```{r variables, results='asis', echo=FALSE}
-DE_FC <- "DE_feature_count"
-if(dir.exists("DE_RSEM") == TRUE){
+config_json <- as.data.table(fromJSON(txt = params$config))
+config_json[,condition := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$condition)]
+  config_json[,replicate       := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$replicate)]
+  config_json[,full_name := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$sample_name)]
+
+comparison <- unique(config_json$comparison)
+biotype <- unique(config_json$biotype_list)
+
+if(config_json$RSEM[1] == TRUE){
   var.rsem <- 1
-  DE_RSEM <- "DE_RSEM"
+  DE <- "DE_RSEM"
 }else{
-   var.rsem <- 0
+  var.rsem <- 0
+  DE <- "DE_feature_count"
 }
 
 `%!in%` <- Negate(`%in%`)
-```
 
-`r print(getwd())`
+mRNA_DE_FOLDER_PATH <- paste0("../results/",DE,"/")
+INPUTFILES <- paste0("../qc_reports/")
+MQC_DATA <- paste0(INPUTFILES,"all_samples/","multiqc_data/")
+
+# set of colors for plot to look like multiqc
+highchart.v4 <- c("#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354", "#2b908f", "#f45b5b", "#91e8e1")
+rseqc.palette <- c("#7cb5ec","#434348","#90ed7d","#f7a35c","#8085e9","#f15c80","#e4d354","#2b908f","#f45b5b","#91e8e1","#cccccc","#7f0000")
+biobloom.palette <- c("#7cb5ec","#434348","#90ed7d","#f7a35c","#8085e9","#f15c80","#e4d354","#2b908f","#f45b5b","#91e8e1","#148E0B","#FDE74C","#7f0000","#cccccc")
+star.palette <- c("#437bb1","#7cb5ec","#f7a35c","#e63491","#b1084c","#7f0000")
+```
 
 # Acknowledgement
 
@@ -49,40 +69,42 @@ if(dir.exists("DE_RSEM") == TRUE){
 
 # Description
 ```{r, results='asis', echo=FALSE}
-config_json <- as.data.table(fromJSON(txt = params$config))
-config_json[,condition := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$condition)]
-  config_json[,tag       := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$tag)]
-  config_json[,full_name := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$sample_name)]
-
-comparison <- unique(config_json$comparison)
-biotype <- unique(config_json$biotype_list)
-
-DE <- ifelse(var.rsem == 1,c("DE_RSEM"),c("DE_feature_count"))
-
-# comparison_dt <- data.table()
-# for (d in DE){
-#   for(f in comparison){
-#     for(b in biotype){
-#       de <- fread(paste0("../results/",d,"/",f,"/",b,"/","DESeq2.tsv"),header = T)
-#       colnames(de)[colnames(de) == 'V1'] <- 'Geneid' # In case we need to rename
-#       ## filter genes
-#       deseq_cutoff <- function(deseq = de, LOG2FC = 0, PADJ = 1){
-#         x <- deseq[is.na(padj) == F & is.na(pvalue) == F,]
-#         x <- x[abs(log2FoldChange) >= LOG2FC & padj <= PADJ,]
-#         return(x)
-#       }
-#       deseq2_enrich <- deseq_cutoff(de, as.numeric(config_json$cutoff_log2fc_enrich[1]), as.numeric(config_json$cutoff_padj_enrich[1]))
-#       deseq2_gsea <- deseq_cutoff(de, as.numeric(config_json$cutoff_log2fc_gsea[1]), as.numeric(config_json$cutoff_padj_gsea[1]))
-#
-#       # theComparison <- str_split(f,"/",simplify = T)[3]
-#       # theAnalysis <- str_split(f,"/",simplify = T)[2]
-#
-#       dt <- data.table(Analysis = d, Conditions = f, "Genes considered for Enrichment" = length(deseq2_enrich$Geneid), "Genes considered for GSEA" = length(deseq2_gsea$Geneid), "Total number of genes" = length(de$Geneid))
-#       comparison_dt <- rbind(comparison_dt, dt)
-#     }
-#   }
-# }
-
 species <- config_json$species[1]
+reference <- config_json$reference[1]
+num_conditions <- length(unique(config_json$condition))
+num_replicat <- length(unique(config_json$replicate))
+rna_type <- config_json$RNAseq_type[1]
+strandness <- config_json$strandness[1]
+umi <- config_json$UMI[1]
+
+paired <- ifelse(config_json$is_paired == TRUE, "paired-end", "single-end")
+
+tabl_sample <- fread(paste0(MQC_DATA,"multiqc_trimmomatic.txt"), header=T)
+
 ```
+- The main goal of the experiment is to perform Differential Expression analysis.
+- In general, we have `r length(config_json[,full_name])` `r species` samples. We have `r num_conditions` conditions, those conditions are sequenced in `r num_replicat` replicates, which is sufficient to obtain statistical significance.
+- Conditions to compare are:
+`r border_remove(theme_booktabs(delete_part(qflextable(data = as.data.frame(unique(config_json$comparison))),part = "header")))`
+
+`r if(rna_type == "classic_rev"){paste0("- Samples were sequenced using ",paired," 75 bp reads; NEBNext Ultra II Directional RNA Library Prep Kit for Illumina + polyA selection.")}`
+`r if(rna_type == "quant_fwd"){"- Samples were sequenced using Lexogen Quantseq FWD kit, therefore a lot of reads in UTR regions are expected as well as huge 3’ sequencing bias. These data can only be used for differential expression analysis."}`
+`r if("No" %!in% umi){"- Samples contained 6bp long UMIs used for detection of PCR duplicates in library."}`
+
+## Agreed task(s)
+1. General samples QC.
+2. RNA-Seq analysis.
+3. DE analysis.
+
+## Samples
+- Brief sample description and number of raw and preprocessed reads are summarized in Table \@ref(tab:tabl-sample).
+
+```{r tab.id="tabl-sample", tab.cap="Sample description - condition assignment and number of raw and preprocessed reads.",  results='asis', echo=FALSE, ft.split=F}
+tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
+setorder(tabl_sample, condition, Sample)
+
+fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" = input_reads, "preprocessed reads" = surviving)])),max_width = 7.1)
+```
+
+
 
