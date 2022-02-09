@@ -74,6 +74,7 @@ star.palette <- c("#437bb1","#7cb5ec","#f7a35c","#e63491","#b1084c","#7f0000")
 ```{r, results='asis', echo=FALSE}
 species <- config_json$species[1]
 reference <- config_json$reference[1]
+num_samples <- length(config_json[,full_name])
 num_conditions <- length(unique(config_json$condition))
 num_replicat <- length(unique(config_json$replicate))
 rna_type <- config_json$RNAseq_type[1]
@@ -101,7 +102,7 @@ custom_height1 <- ifelse(num_samples < 50, default_height, 10)
 custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 50, 15, custom_height1)
 ```
 - The main goal of the experiment is to perform Differential Expression analysis.
-- In general, we have `r length(config_json[,full_name])` `r species` samples. We have `r num_conditions` conditions, those conditions are sequenced in `r num_replicat` replicates, which is sufficient to obtain statistical significance.
+- In general, we have `r num_samples` `r species` samples. We have `r num_conditions` conditions, those conditions are sequenced in `r num_replicat` replicates, which is sufficient to obtain statistical significance.
 - Conditions to compare are:
 `r border_remove(theme_booktabs(delete_part(qflextable(data = as.data.frame(unique(config_json$comparison))),part = "header")))`
 
@@ -361,7 +362,7 @@ plot.rseqc.metric
 
 #### Read coverage distribution
 - The gene body coverage is very similar in all the samples.
-`r if(classic_rev == TRUE){"  - Coverage across the gene is very even and shows very good coverage across whole genes "}else if(quant_fwd == TRUE){"  - Coverage across the gene is very good and shows the characteristic accumulation in 3'end of the genes in all the samples, which is typical from the library preparation using QuantSeq "}``r paste0("(Figure \\@ref(fig:picard-cov)).")`
+`r if(rna_type == "classic_rev"){"  - Coverage across the gene is very even and shows very good coverage across whole genes "}else if(rna_type == "quant_fwd"){"  - Coverage across the gene is very good and shows the characteristic accumulation in 3'end of the genes in all the samples, which is typical from the library preparation using QuantSeq "}``r paste0("(Figure \\@ref(fig:picard-cov)).")`
 
 ```{r picard-cov, results='asis', echo=FALSE, fig.cap="Gene body mapping distribution.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = default_height}
 gene_cov <- load_multiqc(
@@ -400,7 +401,7 @@ plot.gene.cov
 
 
 #### Strand specificity
-- According to the preparation kit reads should be `r if(strandness == "Forward"){in the forward strand.}else if(strandness == "Reverse"){in the reverse strand.}else if(strandness == "Unstranded"){unstranded.}`
+- According to the preparation kit reads should be `r if(strandness == "Forward"){"in the forward strand."}else if(strandness == "Reverse"){"in the reverse strand."}else if(strandness == "Unstranded"){"unstranded."}`
 - The analysis shows the strand-specificity of each library, but cannot be trusted with full confidence.
   - All the samples have ~`r rseqc.sense`% of the forward-strand specificity, ~`r rseqc.antisense`% of the reverse-strand specificity but ~`r rseqc.failed`% mappings cannot be determined.
     - The latest are usually mappings to intergenic regions, unannotated regions or regions where two genes overlap at the same strand (`r paste0("Figure \\@ref(fig:rseqc-exp)")`).
