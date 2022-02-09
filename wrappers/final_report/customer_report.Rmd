@@ -75,12 +75,20 @@ reference <- config_json$reference[1]
 num_conditions <- length(unique(config_json$condition))
 num_replicat <- length(unique(config_json$replicate))
 rna_type <- config_json$RNAseq_type[1]
-strandness <- config_json$strandness[1]
+if(config_json$strandness[1] == "fwd"){
+  strandness <- "Forward"
+}else if(config_json$strandness[1] == "rev"){
+  strandness <- "Reverse"
+}else if(config_json$strandness[1] == "unstr"){
+  strandness <- "Unstranded"
+}
 umi <- config_json$UMI[1]
 
 paired <- ifelse(config_json$is_paired == TRUE, "paired-end", "single-end")
 
 tabl_sample <- fread(paste0(MQC_DATA,"multiqc_trimmomatic.txt"), header=T)
+tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
+setorder(tabl_sample, condition, Sample)
 
 ```
 - The main goal of the experiment is to perform Differential Expression analysis.
@@ -101,39 +109,40 @@ tabl_sample <- fread(paste0(MQC_DATA,"multiqc_trimmomatic.txt"), header=T)
 - Brief sample description and number of raw and preprocessed reads are summarized in Table \@ref(tab:tabl-sample).
 
 ```{r tab.id="tabl-sample", tab.cap="Sample description - condition assignment and number of raw and preprocessed reads.",  results='asis', echo=FALSE, ft.split=F}
-tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
-setorder(tabl_sample, condition, Sample)
-
 fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" = input_reads, "preprocessed reads" = surviving)])),max_width = 7.1)
 ```
 
 ## Analysis
 ```{r, echo=FALSE}
-rseqc.infer.exp = fread(paste0(MQC_DATA,"multiqc_rseqc_infer_experiment.txt"))
+rseqc.infer.exp <- fread(paste0(MQC_DATA,"multiqc_rseqc_infer_experiment.txt"))
+rseqc.infer.exp <- rseqc.infer.exp[,Sample := gsub(".RSeQC.*","",Sample)]
+rseqc.infer.exp <- merge(config_json[, .(Sample = full_name, condition)], rseqc.infer.exp, by="Sample")
+setorder(rseqc.infer.exp, condition, Sample)
 
 if(paired=="single-end"){
-  rseqc.sense = round(mean(100*rseqc.infer.exp$se_sense),0)
-  rseqc.antisense = round(mean(100*rseqc.infer.exp$se_antisense),0)
-  rseqc.failed = round(mean(100*rseqc.infer.exp$failed),0)
+  rseqc.sense <- round(mean(100*rseqc.infer.exp$se_sense),0)
+  rseqc.antisense <- round(mean(100*rseqc.infer.exp$se_antisense),0)
+  rseqc.failed <- round(mean(100*rseqc.infer.exp$failed),0)
 }else{
-  rseqc.sense = round(mean(100*rseqc.infer.exp$pe_sense),0)
-  rseqc.antisense = round(mean(100*rseqc.infer.exp$pe_antisense),0)
-  rseqc.failed = round(mean(100*rseqc.infer.exp$failed),0)
+  rseqc.sense <- round(mean(100*rseqc.infer.exp$pe_sense),0)
+  rseqc.antisense <- round(mean(100*rseqc.infer.exp$pe_antisense),0)
+  rseqc.failed <- round(mean(100*rseqc.infer.exp$failed),0)
 }
 
-rseqc.infer.exp <- melt(rseqc.infer.exp, id.vars = "Sample")
-rseqc.infer.exp <- rseqc.infer.exp[,Sample := gsub(".RSeQC.*","",Sample)]
-pct_antisense <- rseqc.infer.exp[variable %like% "antisense", .(mean(value))]*100
+rseqc.infer.exp <- melt(rseqc.infer.exp, id.vars = c("Sample","condition"))
+rseqc.infer.exp <- rseqc.infer.exp[, value := 100*value]
+pct_antisense <- rseqc.infer.exp[variable %like% "antisense", .(mean(value))]
 
-if(pct_antisense >= 70){strandness <- "Reverse"}
-if(pct_antisense < 30){strandness <- "Forward"}
-if(pct_antisense >= 30 & pct_antisense < 70){strandness <- "Unstranded"}
+if(pct_antisense >= 70){strandness.found <- "Reverse"}
+if(pct_antisense < 30){strandness.found <- "Forward"}
+if(pct_antisense >= 30 & pct_antisense < 70){strandness.found <- "Unstranded"}
 
 plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variable)) +
   geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = rseqc.palette, labels = c("Sense", "Antisense", "Undetermined"), name = "") +
   coord_flip() +
-  scale_y_continuous(labels = scales::percent, name = "% Tags", breaks = c(0,0.2,0.4,0.6,0.8,1)) +
+  #scale_y_continuous(labels = scales::percent, name = "% Tags", breaks = c(0,0.2,0.4,0.6,0.8,1)) +
+  scale_y_continuous(name = "% Tags", breaks = seq(0,100,10)) +
   xlab("") +
   scale_x_discrete(limits=rev) +
   theme_bw() +
@@ -143,22 +152,22 @@ plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variab
   ggtitle("RSeQC: Infer experiment")
 
 ```
-- Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**)  and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: Ensembl GRCh38, gene annotation: Ensembl v94**)
-- Mapped reads were counted and summarized to genes (**featureCounts**)
-  - Only uniquely mapped and uniquely assigned reads were counted
-  - **`r strandness`** counts were considered because of the both library prep. kit strand-specificity
-`r if(var.rsem==1){"- Mapped reads were counted and summarized to genes (**RSEM**)"}`
-`r if(var.rsem==1){"  - Uniquely mapped as well as multimapped reads were counted"}`
-`r if(var.rsem==1){paste0("  - **",strandness,"** counts were considered because of the both library prep. kit strand-specificity")}`
-- Following checks were performed to estimate the overall sample quality
-  - rRNA content estimate (**fastq_screen**)
-  - Read duplication rate (**dupRadar, Picard tools**)
-  - Sequenced (targeted) regions (**RSeQC, Picard tools**)
-  - 5’/3’ coverage bias (**Picard tools**)
-  - Expressed gene biotypes (**featureCounts**)
-  - Library strandness (**RSeQC**)
-  - Other quality checks are available upon request
-- Complete settings, used commands, tool versions and methodology part for a publication can be provided upon request
+- Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**)  and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r reference`**).
+- Mapped reads were counted and summarized to genes (**featureCounts**).
+  - Only uniquely mapped and uniquely assigned reads were counted.
+  - The library preparation kit strand-specificity is: **`r tolower(strandness)`**, and only reads in this strand should be considered.
+`r if(var.rsem==1){"- Mapped reads were counted and summarized to genes (**RSEM**)."}`
+`r if(var.rsem==1){"  - Uniquely mapped as well as multimapped reads were counted."}`
+`r if(var.rsem==1){paste0("  - The library preparation kit strand-specificity is: **",tolower(strandness),"**, and only reads in this strand should be considered.")}`
+- Following checks were performed to estimate the overall sample quality:
+  - rRNA content estimate (**fastq_screen**).
+  - Read duplication rate (**dupRadar, Picard tools**).
+  - Sequenced (targeted) regions (**RSeQC, Picard tools**).
+  - 5’/3’ coverage bias (**Picard tools**).
+  - Expressed gene biotypes (**featureCounts**).
+  - Library strandness (**RSeQC**).
+  - Other quality checks are available upon request.
+- Complete settings, used commands, tool versions and methodology part for a publication can be provided upon request.
 
 ## Results
 ### General samples QC
@@ -186,15 +195,15 @@ if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
 
 #### Alignment and splices
 ```{r, results='asis', echo=FALSE}
-multiqc_star = fread(paste0(MQC_DATA,"multiqc_star.txt"))
+multiqc_star <- fread(paste0(MQC_DATA,"multiqc_star.txt"))
+multiqc_star <- merge(config_json[, .(Sample = full_name, condition)], multiqc_star, by="Sample")
 
-tabl_mapread = multiqc_star[, .(Sample, uniquely_mapped, uniquely_mapped_percent, multimapped, multimapped_percent)]
+tabl_mapread <- multiqc_star[, .(Sample, condition, uniquely_mapped, uniquely_mapped_percent, multimapped, multimapped_percent)]
+setorder(tabl_mapread, condition, Sample)
 
-setorder(tabl_mapread, Sample)
-
-uni.map.mean.perc = round(mean(tabl_mapread[,uniquely_mapped_percent]), 0)
-uni.map.min = round(min(tabl_mapread[,uniquely_mapped]/1E6))
-uni.map.max = round(max(tabl_mapread[,uniquely_mapped]/1E6))
+uni.map.mean.perc <- round(mean(tabl_mapread[,uniquely_mapped_percent]), 0)
+uni.map.min <- round(min(tabl_mapread[,uniquely_mapped]/1E6))
+uni.map.max <- round(max(tabl_mapread[,uniquely_mapped]/1E6))
 
 col.perc <- names(multiqc_star) %like% "percent"
 multiqc_star_perc <- cbind(multiqc_star[,1], multiqc_star[, ..col.perc])
@@ -207,11 +216,12 @@ star.name.not0 <- multiqc_star_perc[, .(sum = sum(value)), by = variable][sum > 
 multiqc_star_perc <- multiqc_star_perc[variable %in% star.name.not0,]
 star.labcol <- star.labcol[variable %in% star.name.not0,]
 
+
 plot.multiqc_star_perc <- ggplot(multiqc_star_perc, aes(Sample, value, fill = variable)) +
   geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = star.labcol$Colour, labels = star.labcol$Label, name = "") +
   coord_flip() +
-  scale_y_continuous(name = "Percentages", breaks = seq(0,100,20)) +
+  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
   xlab("") +
   scale_x_discrete(limits=rev) +
   theme_bw() +
@@ -227,7 +237,7 @@ plot.multiqc_star_perc <- ggplot(multiqc_star_perc, aes(Sample, value, fill = va
 - The number and percentage of uniquely- and multi-mapped reads are pretty good for all samples ~`r uni.map.mean.perc`% of uniquely mapped and we are getting approximately the same values across all samples, same applies for number of mapped reads, which varies between ~`r uni.map.min`M and ~`r uni.map.max`M (Table \@ref(tab:tabl-mapread), Figure \@ref(fig:star-map)).
 
 ```{r tab.id="tabl-mapread", tab.cap="Number and percentage of uniquely- and multi-mapped reads", results='asis', echo=FALSE, out.width="80%", ft.split=F}
-fit_to_width(autofit(qflextable(tabl_mapread[,.(Sample, "uniquely mapped" = uniquely_mapped, "uniquely mapped (%)" = uniquely_mapped_percent, multimapped, "multimapped (%)" = multimapped_percent)])),max_width = 7.1)
+fit_to_width(autofit(qflextable(tabl_mapread[,.(Sample, condition, "uniquely mapped" = uniquely_mapped, "uniquely mapped (%)" = uniquely_mapped_percent, multimapped, "multimapped (%)" = multimapped_percent)])),max_width = 7.1)
 ```
 
 ```{r star-map, results='asis', echo=FALSE, fig.cap="Percentages and distribution of different mapping types. For more details please see the STAR aligner manual.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
@@ -236,10 +246,12 @@ plot.multiqc_star_perc
 
 #### rRNA contamination
 ```{r , results='asis', echo=FALSE}
-fastq.screen.files = fread(paste0(MQC_DATA,"multiqc_fastq_screen.txt"))
-rrna = fastq.screen.files[, .(Sample = gsub("_screen$","",Sample), rRNA.perc=get("rRNA percentage"))]
+fastq.screen.files <- fread(paste0(MQC_DATA,"multiqc_fastq_screen.txt"))
+fastq.screen.files <- merge(config_json[, .(Sample = full_name, condition)], fastq.screen.files[, Sample := gsub("_screen$","",Sample)], by="Sample")
 
-rrna.p = ggplot(rrna, aes(Sample, rRNA.perc)) +
+rrna <- fastq.screen.files[, .(Sample, rRNA.perc=get("rRNA percentage"))]
+
+rrna.p <- ggplot(rrna, aes(Sample, rRNA.perc)) +
   geom_bar(stat = "identity", width = 0.8, fill = "#7f0000") +
   theme_bw() +
   coord_flip() +
@@ -249,7 +261,7 @@ rrna.p = ggplot(rrna, aes(Sample, rRNA.perc)) +
   theme(plot.title = element_text(face="bold")) +
   ggtitle("rRNA Content")
 
-rrna.max = round(max(rrna[,rRNA.perc]))
+rrna.max <- round(max(rrna[,rRNA.perc]))
 ```
 
 - Samples had a little bit higher percentage of rRNA contamination up to `r rrna.max`%
@@ -263,9 +275,11 @@ rrna.p
 
 #### Mapped regions
 ```{r, echo=FALSE}
-picard.metric = fread(paste0(MQC_DATA,"multiqc_picard_RnaSeqMetrics.txt"))
+picard.metric <- fread(paste0(MQC_DATA,"multiqc_picard_RnaSeqMetrics.txt"))
+picard.metric <- merge(config_json[, .(Sample = full_name, condition)], picard.metric, by="Sample")
 
-rseqc.metric = fread(paste0(MQC_DATA,"multiqc_rseqc_read_distribution.txt"))
+rseqc.metric <- fread(paste0(MQC_DATA,"multiqc_rseqc_read_distribution.txt"))
+rseqc.metric <- merge(config_json[, .(Sample = full_name, condition)], rseqc.metric[, Sample:=gsub(".RSeQC.*","",Sample)], by="Sample")
 
 rseqc.pct <- names(rseqc.metric)[names(rseqc.metric) %like% "tag_pct"]
 rseqc.metric.tbl <- cbind(rseqc.metric[,1], rseqc.metric[, ..rseqc.pct])
@@ -279,12 +293,12 @@ rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (tss_up_5kb_tag_pct = NULL,
                                              tes_down_5kb_tag_pct = NULL,
                                              tes_down_10kb_tag_pct = NULL)]
 
-rseqc.metric = rseqc.metric[, "mrna_tag_pct" := (get("cds_exons_tag_pct") + get("5_utr_exons_tag_pct") + get("3_utr_exons_tag_pct"))]
+rseqc.metric <- rseqc.metric[, "mrna_tag_pct" := (get("cds_exons_tag_pct") + get("5_utr_exons_tag_pct") + get("3_utr_exons_tag_pct"))]
 
-picard.intron = round(mean(picard.metric$PCT_INTRONIC_BASES),0)
-rseqc.intron = round(mean(rseqc.metric$introns_tag_pct),0)
-picard.mrna = round(mean(picard.metric$PCT_MRNA_BASES),0)
-rseqc.mrna = round(mean(rseqc.metric$mrna_tag_pct),0)
+picard.intron <- round(mean(picard.metric$PCT_INTRONIC_BASES),0)
+rseqc.intron <- round(mean(rseqc.metric$introns_tag_pct),0)
+picard.mrna <- round(mean(picard.metric$PCT_MRNA_BASES),0)
+rseqc.mrna <- round(mean(rseqc.metric$mrna_tag_pct),0)
 
 picard.metric.tbl <- picard.metric[, .(Sample, Coding = CODING_BASES/PF_BASES, UTR = UTR_BASES/PF_BASES, Intronic = INTRONIC_BASES/PF_BASES, Intergenic = INTERGENIC_BASES/PF_BASES, not_aligned = PF_NOT_ALIGNED_BASES/PF_BASES)]
 picard.metric.tbl <- melt(picard.metric.tbl, id.vars = "Sample")
@@ -294,7 +308,7 @@ plot.picard.metric <- ggplot(picard.metric.tbl, aes(Sample, value, fill = factor
   geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = rseqc.palette, labels = c("Coding","UTR","Intronic","Intergenic","PF not aligned"), name = "") +
   coord_flip() +
-  scale_y_continuous(name = "Percentages", breaks = seq(0,100,20)) +
+  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
   xlab("") +
   scale_x_discrete(limits=rev) +
   theme_bw() +
@@ -311,7 +325,7 @@ plot.rseqc.metric <- ggplot(rseqc.metric.tbl, aes(Sample, value, fill = factor(v
   geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = rseqc.palette, labels = c("CDS_Exons","5'UTR_Exons","3'UTR_Exons","Introns","TSS_up_1kb","TSS_up_5kb","TSS_up_10kb","TES_down_1kb","TES_down_5kb","TES_down_10kb","Other_intergenic"), name = "") +
   coord_flip() +
-  scale_y_continuous(name = "Percentages", breaks = seq(0,100,20)) +
+  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
   xlab("") +
   scale_x_discrete(limits=rev) +
   theme_bw() +
@@ -341,7 +355,7 @@ plot.rseqc.metric
 `r if(classic_rev == TRUE){"  - Coverage across the gene is very even and shows very good coverage across whole genes "}else if(quant_fwd == TRUE){"  - Coverage across the gene is very good and shows the characteristic accumulation in 3'end of the genes in all the samples, which is typical from the library preparation using QuantSeq "}``r paste0("(Figure \\@ref(fig:picard-cov)).")`
 
 ```{r picard-cov, results='asis', echo=FALSE, fig.cap="Gene body mapping distribution.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = default_height}
-gene_cov = load_multiqc(
+gene_cov <- load_multiqc(
   paste0(MQC_DATA,"multiqc_data.json"),
   sections = "plots",
   plot_opts = list(picard_rna_coverage = list(
@@ -354,6 +368,8 @@ gene_cov = load_multiqc(
 gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage.df))
 setnames(gene_cov, "metadata.sample_id","Sample")
 
+gene_cov <- merge(config_json[, .(Sample = full_name)], gene_cov, by="Sample")
+
 coul <- c(rseqc.palette,rseqc.palette)
 if(length(unique(gene_cov$Sample)) > length(coul)){
   coul <- colorRampPalette(coul)(length(unique(gene_cov$Sample)))
@@ -363,7 +379,7 @@ plot.gene.cov <- ggplot(gene_cov, aes(x, y, colour = factor(Sample))) +
   geom_line() +
   scale_colour_manual(values = coul, name = "") +
   ylab("Coverage") +
-  scale_x_continuous(name = "Percent through gene", breaks = c(0,20,40,60,80,100)) +
+  scale_x_continuous(name = "Percent through gene", breaks = seq(0,100,10)) +
   theme_bw() +
   theme(legend.position="none") +
   theme(plot.title = element_text(face="bold")) +
@@ -375,10 +391,11 @@ plot.gene.cov
 
 
 #### Strand specificity
+- According to the preparation kit reads should be `r if(strandness == "Forward"){in the forward strand.}else if(strandness == "Reverse"){in the reverse strand.}else if(strandness == "Unstranded"){unstranded.}`
 - The analysis shows the strand-specificity of each library, but cannot be trusted with full confidence.
   - All the samples have ~`r rseqc.sense`% of the forward-strand specificity, ~`r rseqc.antisense`% of the reverse-strand specificity but ~`r rseqc.failed`% mappings cannot be determined.
-    - These are usually mappings to intergenic regions, unannotated regions or regions where two genes overlap at the same strand (`r paste0("Figure \\@ref(fig:rseqc-exp)")`).
-  - We consider mapping as `r tolower(strandness)`, as we got the highest number of suitable reads for DE analysis.
+    - The latest are usually mappings to intergenic regions, unannotated regions or regions where two genes overlap at the same strand (`r paste0("Figure \\@ref(fig:rseqc-exp)")`).
+  - We consider mapping as `r tolower(strandness.found)`, as we got the highest number of suitable reads for DE analysis.
 
 ```{r rseqc-exp, results='asis', echo=FALSE, fig.cap="Library strand specificity.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
 plot.rseqc.infer.exp
@@ -387,7 +404,7 @@ plot.rseqc.infer.exp
 #### Read count assignment to genes
 ```{r, echo=FALSE}
 if(var.rsem == 1){
-rsem.assign = fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
+rsem.assign <- fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
 rsem.assign <- rsem.assign[, aligned.unique := 100*Unique/Total]
 rsem.assign <- rsem.assign[, aligned.multi := 100*Multi/Total]
 rsem.assign <- rsem.assign[, filter := 100*Filtered/Total]
@@ -400,7 +417,7 @@ plot.rsem.assign <- ggplot(rsem.assign.tabl, aes(Sample, value, fill = factor(va
   geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = star.palette[c(1,4,5,6)], name = "", labels = c("Aligned uniquely to a gene","Aligned to multiple genes","Filtered due to too many alignments","Unalignable reads")) +
   coord_flip() +
-  scale_y_continuous(name = "Percentages", breaks = seq(0,100,20)) +
+  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
   xlab("") +
   scale_x_discrete(limits=rev) +
   theme_bw() +
@@ -410,18 +427,19 @@ plot.rsem.assign <- ggplot(rsem.assign.tabl, aes(Sample, value, fill = factor(va
   theme(plot.title = element_text(face="bold")) +
   ggtitle("RSEM: Mapped reads")
 
-rsem.assign.min = round(min(rsem.assign[,Alignable]/1E6),0)
-rsem.assign.max = round(max(rsem.assign[,Alignable]/1E6),0)
-rsem.assign.min.perc = round(min(rsem.assign[,alignable_percent]),0)
-rsem.assign.max.perc = round(max(rsem.assign[,alignable_percent]),0)
+rsem.assign.min <- round(min(rsem.assign[,Alignable]/1E6),0)
+rsem.assign.max <- round(max(rsem.assign[,Alignable]/1E6),0)
+rsem.assign.min.perc <- round(min(rsem.assign[,alignable_percent]),0)
+rsem.assign.max.perc <- round(max(rsem.assign[,alignable_percent]),0)
 }
 
-fc.assign = fread(paste0(MQC_DATA,"multiqc_featureCounts.txt"))
-
-fc.assign.min = round(min(fc.assign[,Assigned]/1E6),0)
-fc.assign.max = round(max(fc.assign[,Assigned]/1E6),0)
-fc.assign.min.perc = round(min(fc.assign[,percent_assigned]),0)
-fc.assign.max.perc = round(max(fc.assign[,percent_assigned]),0)
+fc.assign <- fread(paste0(MQC_DATA,"multiqc_featureCounts.txt"))
+fc.assign <- merge(config_json[, .(Sample = full_name, condition)], fc.assign, by="Sample")
+setorder(fc.assign, condition, Sample)
+fc.assign.min <- round(min(fc.assign[,Assigned]/1E6),0)
+fc.assign.max <- round(max(fc.assign[,Assigned]/1E6),0)
+fc.assign.min.perc <- round(min(fc.assign[,percent_assigned]),0)
+fc.assign.max.perc <- round(max(fc.assign[,percent_assigned]),0)
 fc.assign <- fc.assign[, `:=` (Assigned_pct = 100*Assigned/Total,
                                Unassigned_Unmapped_pct = 100*Unassigned_Unmapped/Total,
                                Unassigned_MappingQuality_pct = 100*Unassigned_MappingQuality/Total,
@@ -436,9 +454,9 @@ fc.assign <- fc.assign[, `:=` (Assigned_pct = 100*Assigned/Total,
                                Unassigned_Ambiguity_pct = 100*Unassigned_Ambiguity/Total
                                )]
 
-fc.name.pct = names(fc.assign)[names(fc.assign) %like% "_pct"]
-fc.assign.tabl = cbind(fc.assign[,1], fc.assign[, ..fc.name.pct])
-fc.assign.tabl <- melt(fc.assign.tabl, id.vars = "Sample")
+fc.name.pct <- names(fc.assign)[names(fc.assign) %like% "_pct"]
+fc.assign.tabl <- cbind(fc.assign[,1], fc.assign[, ..fc.name.pct])
+fc.assign.tabl <- melt(fc.assign.tabl, id.vars = c("Sample"))
 fc.assign.tabl <- fc.assign.tabl[, variable := gsub("_pct", "", variable)]
 fc.assign.tabl <- fc.assign.tabl[, variable := factor(variable, levels = c("Assigned","Unassigned_Unmapped","Unassigned_MappingQuality","Unassigned_Chimera","Unassigned_FragmentLength","Unassigned_Duplicate","Unassigned_MultiMapping","Unassigned_Secondary","Unassigned_NonSplit","Unassigned_NoFeatures","Unassigned_Overlapping_Length","Unassigned_Ambiguity"))]
 
@@ -449,7 +467,7 @@ plot.fc.assign <- ggplot(fc.assign.tabl, aes(Sample, value, fill = variable)) +
   geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = rseqc.palette, name = "") +
   coord_flip() +
-  scale_y_continuous(name = "Percentages", breaks = seq(0,100,20)) +
+  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
   xlab("") +
   scale_x_discrete(limits=rev) +
   theme_bw() +
@@ -496,7 +514,7 @@ if(var.rsem==1){
   - This is expected from polyA selection based libraries.
 
 ```{r biotype, fig.cap = "Captured gene biotypes.", echo=FALSE, out.width="90%", fig.width=7, fig.height = custom_height1, fig.align="center", fig.show="hold", dev="svg"}
-biotype.files = list.files(paste0(INPUTFILES), pattern = ".biotype_counts.txt", recursive = T)
+biotype.files <- list.files(paste0(INPUTFILES), pattern = ".biotype_counts.txt", recursive = T)
 featureCounts <- fread(paste0(INPUTFILES,biotype.files[1]), header=T, stringsAsFactors = F)
 if (length(biotype.files) > 1) {
   for (i in 2:length(biotype.files)){
@@ -506,14 +524,16 @@ if (length(biotype.files) > 1) {
 }
 colnames(featureCounts)[-1]<-sapply(biotype.files,function(x) gsub(".biotype_counts.txt","",basename(x)))  # Rename columns - split after first "_"
 
-featureCounts = melt(featureCounts, id.vars = "Geneid", variable.name = "Sample")
+featureCounts <- melt(featureCounts, id.vars = "Geneid", variable.name = "Sample")
+featureCounts <- merge(config_json[, .(Sample = full_name)], featureCounts, by = "Sample")
+
 featureCounts[, perc := round((100*value/sum(value)),2), by=Sample] # compute percentage
 featureCounts[, sum.value := sum(value), by = Sample]
-pct = featureCounts[perc >=2 ,] # Get abundant features (>= 2%)
-others = pct[, .(Geneid = "other", value = sum.value - sum(value), perc = round(100-(sum(perc)),2)), by = .(Sample, sum.value)] # Other features - added together to one
-others = others[, .(Geneid, Sample, value, perc, sum.value)]
+pct <- featureCounts[perc >=2 ,] # Get abundant features (>= 2%)
+others <- pct[, .(Geneid = "other", value = sum.value - sum(value), perc = round(100-(sum(perc)),2)), by = .(Sample, sum.value)] # Other features - added together to one
+others <- others[, .(Geneid, Sample, value, perc, sum.value)]
 
-pct = rbind(pct, others)
+pct <- rbind(pct, others)
 
 setorder(pct, Sample, Geneid)
 
@@ -521,7 +541,7 @@ setorder(pct, Sample, Geneid)
 if(length(unique(pct$Sample)) == 1){
   #pdf(file=paste0(outpdf), width = 6, height = 6)
 
-  piecolor = brewer.pal(n = length(pct$Geneid), name = "Set1")
+  piecolor <- brewer.pal(n = length(pct$Geneid), name = "Set1")
   pie(pct$perc, labels = paste0(pct$perc,"%"),
     col = piecolor,
     main = paste("Pie Chart of Gene Biotypes", pct$Sample[1], pct$sum.value[1], sep="\n"),
@@ -530,7 +550,7 @@ if(length(unique(pct$Sample)) == 1){
 
   #dev.off()
 }else{
-  mybar = ggplot(data = pct, aes(x=Sample, y=perc, fill=Geneid)) +
+  mybar <- ggplot(data = pct, aes(x=Sample, y=perc, fill=Geneid)) +
           geom_bar(stat="identity") +
           scale_fill_brewer(palette = "Set1") +
           theme_bw() +
