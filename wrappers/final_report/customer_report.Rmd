@@ -28,6 +28,8 @@ library(jsonlite)
 library(flextable)
 library(stringr)
 library(ggplot2)
+library(TidyMultiqc)
+library(tidyr)
 
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 set_flextable_defaults(font.family = "Arial", font.size = 12, padding.top = 3, padding.bottom = 3)
@@ -90,6 +92,13 @@ tabl_sample <- fread(paste0(MQC_DATA,"multiqc_trimmomatic.txt"), header=T)
 tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
 setorder(tabl_sample, condition, Sample)
 
+# Height for sample plots
+# default is good for few samples and Read coverage plot
+default_height <- 5
+# custom is needed if several samples >= 50 ? -> 10
+custom_height1 <- ifelse(num_samples < 50, default_height, 10)
+# another custom if the first one is not enough (rRNA plot can need higher value because of pair-end doubling the amount of samples) -> 15
+custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 50, 15, custom_height1)
 ```
 - The main goal of the experiment is to perform Differential Expression analysis.
 - In general, we have `r length(config_json[,full_name])` `r species` samples. We have `r num_conditions` conditions, those conditions are sequenced in `r num_replicat` replicates, which is sufficient to obtain statistical significance.
