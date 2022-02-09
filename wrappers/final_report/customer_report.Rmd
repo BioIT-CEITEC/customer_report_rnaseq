@@ -84,7 +84,7 @@ if(config_json$strandness[1] == "fwd"){
 }
 umi <- config_json$UMI[1]
 
-paired <- ifelse(config_json$is_paired == TRUE, "paired-end", "single-end")
+paired <- ifelse(config_json$is_paired[1] == TRUE, "paired-end", "single-end")
 
 tabl_sample <- fread(paste0(MQC_DATA,"multiqc_trimmomatic.txt"), header=T)
 tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
