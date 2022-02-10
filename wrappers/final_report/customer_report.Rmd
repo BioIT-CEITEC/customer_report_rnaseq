@@ -275,10 +275,10 @@ rrna.p <- ggplot(rrna, aes(Sample, rRNA.perc)) +
 rrna.max <- round(max(rrna[,rRNA.perc]))
 ```
 
-- Samples had a little bit higher percentage of rRNA contamination up to `r rrna.max`%
-  - For polyA selection, we would expect ~ 1%, for rRNA depletion could be up to 10%
-  - This can be due to less effective polyA selection procedure, but overall we still have a lot of usable reads and information to perform Differential expression analysis
-  - The percentages are summarized in Figure \@ref(fig:fastq-screen-rrna)
+- Samples had a percentage of rRNA contamination up to `r rrna.max`%
+  - For polyA selection, we would expect ~ 1%, while for rRNA depletion it could be up to 10%.
+  - This can be due to less effective polyA selection procedure, but overall we still have a lot of usable reads and information to perform Differential expression analysis.
+  - The percentages are summarized in Figure \@ref(fig:fastq-screen-rrna).
 
 ```{r fastq-screen-rrna, results='asis', echo=FALSE, fig.cap="rRNA estimate.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height2}
 rrna.p
@@ -768,7 +768,7 @@ knitr::include_graphics(volcano.files[1])
 
 ```{r de-ma-plot, fig.cap = paste0("MA plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named."), echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
 
-ma.files = grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comparison,"/all/"), pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T), pattern="edgeR", value = T, invert = T), pattern="ggpubr.pdf.png", value=T)
+ma.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comparison,"/all/"), pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T), pattern="edgeR", value = T, invert = T), pattern="ggpubr.pdf.png", value=T)
 
 if(length(ma.files)>1){
   for(i in 2:length(ma.files)){
