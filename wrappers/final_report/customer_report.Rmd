@@ -595,7 +595,7 @@ if(length(unique(pct$Sample)) == 1){
   - Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai
   - Homo_sapiens.GRCh38.94.sorted.gtf
   - Homo_sapiens.GRCh38.94.sorted.gtf.idx
-- All the index files (.bai, .fai, .idx) must be in the same folder as their “parent” files otherwise IGV wouldn’t open them.
+- All the index files (.bai, .fai, .idx) must be in the same folder as their "parent" files otherwise IGV wouldn't open them.
 
 # DE analysis
 - For the DE analysis we used gene counts from `r ifelse(var.rsem==1,"RSEM","featureCounts")` tool.
