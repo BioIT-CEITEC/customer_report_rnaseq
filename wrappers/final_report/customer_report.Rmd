@@ -783,7 +783,7 @@ knitr::include_graphics(ma.files[1])
 
 ```{r de-top-de, fig.cap = paste0("Heatmap of maximum top 20 differentially expressed genes (DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1)."), echo=FALSE, out.height="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
 
-top_de.files = list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),pattern ="heatmap_selected_orderBaseMeanCluster.pdf.png", full.names = T)
+top_de.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),pattern ="heatmap_selected_orderBaseMeanCluster.pdf.png", full.names = T)
 if(length(top_de.files)>0){
   if(length(top_de.files)>1){
     for(i in 2:length(top_de.files)){
