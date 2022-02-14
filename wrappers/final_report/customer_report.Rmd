@@ -643,6 +643,7 @@ if(config_json$conditions_to_compare[1] == "all"){
 
 if(length(heatmap.sample.files$path)>1){
   for(i in 2:length(heatmap.sample.files$path)){
+    cat("<div align='center'><img src=",heatmap.sample.files$path[i]," width='80%'/></div>")
     cat("![](",heatmap.sample.files$path[i],")")
     cat('\n\n')
   }
