@@ -2,7 +2,8 @@
 output:
   bookdown::html_document2:
     highlight: tango
-    number_sections: no
+    number_sections: true
+    global_numbering: true
 
 params:
   config: snakemake.params.config
@@ -665,6 +666,7 @@ if(config_json$conditions_to_compare[1] == "all"){
 
 if(length(sample.sample.files$path)>1){
   for(i in 2:length(sample.sample.files$path)){
+    cat("<div align='center'><img src=",sample.sample.files$path[i]," width='80%'/></div>")
     cat("![](",sample.sample.files$path[i],")")
     cat('\n\n')
   }
