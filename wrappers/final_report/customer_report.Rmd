@@ -588,9 +588,9 @@ if(length(unique(pct$Sample)) == 1){
 ## Visualization
 
 ### IGV
-- You can upload the provided aligned bam files.
 - Reference genomes and annotations for `r reference` are available to download on [Ensembl](https://www.ensembl.org/index.html) website.
-- The IGV tutorial is available [here](http://software.broadinstitute.org/software/igv/userguide)
+- You can upload the provided aligned bam files with the reference in IGV for visualization.
+- The IGV tutorial is available [here](http://software.broadinstitute.org/software/igv/userguide).
 - All the index files (.bai, .fai, .idx) must be in the same folder as their "parent" files otherwise IGV wouldn't open them.
 
 # DE analysis
