@@ -611,7 +611,7 @@ if(config_json$conditions_to_compare[1] == "all"){
 
 if(length(ppnc.files)>1){
   for(i in 2:length(ppnc.files)){
-    cat("<div align='center'><img src=",ppnc.files$path[i]," width='80%'/></div>")
+    cat("<div align='center'><img src=",ppnc.files[i]," width='80%'/></div>")
     #cat("![](",ppnc.files[i],")")
     cat('\n\n')
   }
@@ -756,7 +756,7 @@ volcano.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comp
 
 if(length(volcano.files)>1){
   for(i in 2:length(volcano.files)){
-    cat("<div align='center'><img src=",volcano.files$path[i]," width='80%'/></div>")
+    cat("<div align='center'><img src=",volcano.files[i]," width='80%'/></div>")
     #cat("![](",volcano.files[i],")")
     cat('\n\n')
   }
@@ -772,7 +772,7 @@ ma.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",compariso
 
 if(length(ma.files)>1){
   for(i in 2:length(ma.files)){
-    cat("<div align='center'><img src=",ma.files$path[i]," width='80%'/></div>")
+    cat("<div align='center'><img src=",ma.files[i]," width='80%'/></div>")
     #cat("![](",ma.files[i],")")
     cat('\n\n')
   }
@@ -788,7 +788,7 @@ top_de.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),
 if(length(top_de.files)>0){
   if(length(top_de.files)>1){
     for(i in 2:length(top_de.files)){
-      cat("<div align='center'><img src=",top_de.files$path[i]," width='80%'/></div>")
+      cat("<div align='center'><img src=",top_de.files[i]," width='80%'/></div>")
       #cat("![](",top_de.files[i],")")
       cat('\n\n')
     }
