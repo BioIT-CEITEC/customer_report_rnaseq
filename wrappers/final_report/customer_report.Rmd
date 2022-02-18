@@ -588,14 +588,9 @@ if(length(unique(pct$Sample)) == 1){
 ## Visualization
 
 ### IGV
-- You can upload the provided aligned bam files, the provided genome annotation and the gene annotation to the IGV and browse the alignments.
+- You can upload the provided aligned bam files.
+- Reference genomes and annotations for `r reference` are available to download on [Ensembl](https://www.ensembl.org/index.html) website.
 - The IGV tutorial is available [here](http://software.broadinstitute.org/software/igv/userguide)
-- References are available to download (for example for IGV) [here](https://owncloud.cesnet.cz/index.php/s/pMa5OETWNfbqDKd).
-- Used references
-  - Homo_sapiens.GRCh38.dna.primary_assembly.fa
-  - Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai
-  - Homo_sapiens.GRCh38.94.sorted.gtf
-  - Homo_sapiens.GRCh38.94.sorted.gtf.idx
 - All the index files (.bai, .fai, .idx) must be in the same folder as their "parent" files otherwise IGV wouldn't open them.
 
 # DE analysis
@@ -616,7 +611,8 @@ if(config_json$conditions_to_compare[1] == "all"){
 
 if(length(ppnc.files)>1){
   for(i in 2:length(ppnc.files)){
-    cat("![](",ppnc.files[i],")")
+    cat("<div align='center'><img src=",ppnc.files$path[i]," width='80%'/></div>")
+    #cat("![](",ppnc.files[i],")")
     cat('\n\n')
   }
 }
@@ -668,7 +664,7 @@ if(config_json$conditions_to_compare[1] == "all"){
 if(length(sample.sample.files$path)>1){
   for(i in 2:length(sample.sample.files$path)){
     cat("<div align='center'><img src=",sample.sample.files$path[i]," width='80%'/></div>")
-    cat("![](",sample.sample.files$path[i],")")
+    #cat("![](",sample.sample.files$path[i],")")
     cat('\n\n')
   }
 }
@@ -760,7 +756,8 @@ volcano.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comp
 
 if(length(volcano.files)>1){
   for(i in 2:length(volcano.files)){
-    cat("![](",volcano.files[i],")")
+    cat("<div align='center'><img src=",volcano.files$path[i]," width='80%'/></div>")
+    #cat("![](",volcano.files[i],")")
     cat('\n\n')
   }
 }
@@ -775,7 +772,8 @@ ma.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",compariso
 
 if(length(ma.files)>1){
   for(i in 2:length(ma.files)){
-    cat("![](",ma.files[i],")")
+    cat("<div align='center'><img src=",ma.files$path[i]," width='80%'/></div>")
+    #cat("![](",ma.files[i],")")
     cat('\n\n')
   }
 }
@@ -790,7 +788,8 @@ top_de.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),
 if(length(top_de.files)>0){
   if(length(top_de.files)>1){
     for(i in 2:length(top_de.files)){
-      cat("![](",top_de.files[i],")")
+      cat("<div align='center'><img src=",top_de.files$path[i]," width='80%'/></div>")
+      #cat("![](",top_de.files[i],")")
       cat('\n\n')
     }
   }
