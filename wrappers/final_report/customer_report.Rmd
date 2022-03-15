@@ -633,10 +633,10 @@ knitr::include_graphics(ppnc.files[1])
 
 if(config_json$conditions_to_compare[1] == "all"){
   heatmap.sample.files <- data.table(comp = comparison[1])
-  heatmap.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_batch.pdf-0.png")), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_batch.pdf-0.png"), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples.pdf-0.png"))]
+  heatmap.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log_batch.png")), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log_batch.png"), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log.png"))]
 }else{
   heatmap.sample.files <- data.table(comp = comparison)
-  heatmap.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_batch.pdf-0.png")), paste0("../results/",DE,"/",comparison,"/all/heatmaps_samples_batch.pdf-0.png"), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples.pdf-0.png"))]
+  heatmap.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log_batch.png")), paste0("../results/",DE,"/",comparison,"/all/heatmaps_samples_log_batch.png"), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log.png"))]
 }
 
 #heatmap.sample.files = list.files(paste0(mRNA_DE_FOLDER_PATH,comparison$cp,"/all/"), pattern = "heatmaps_samples_log", full.names = T)
