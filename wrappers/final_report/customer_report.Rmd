@@ -2,8 +2,12 @@
 output:
   bookdown::html_document2:
     highlight: tango
-    number_sections: true
+    number_sections: false
     global_numbering: true
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
 
 params:
   config: snakemake.params.config
@@ -205,7 +209,7 @@ if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
 - Initial quality check for analysis did not show presence of adapters (<`r max_adaptor`%), no adapter trimming was performed
 - Other initial quality checks look OK
 
-#### Alignment and splices
+### Alignment and splices
 ```{r, results='asis', echo=FALSE}
 multiqc_star <- fread(paste0(MQC_DATA,"multiqc_star.txt"))
 multiqc_star <- merge(config_json[, .(Sample = full_name, condition)], multiqc_star, by="Sample")
@@ -256,7 +260,7 @@ fit_to_width(autofit(qflextable(tabl_mapread[,.(Sample, condition, "uniquely map
 plot.multiqc_star_perc
 ```
 
-#### rRNA contamination
+### rRNA contamination
 ```{r , results='asis', echo=FALSE}
 fastq.screen.files <- fread(paste0(MQC_DATA,"multiqc_fastq_screen.txt"))
 fastq.screen.files <- merge(config_json[, .(Sample = full_name, condition)], fastq.screen.files[, Sample := gsub("_screen$","",Sample)], by="Sample")
@@ -285,7 +289,7 @@ rrna.max <- round(max(rrna[,rRNA.perc]))
 rrna.p
 ```
 
-#### Mapped regions
+### Mapped regions
 ```{r, echo=FALSE}
 picard.metric <- fread(paste0(MQC_DATA,"multiqc_picard_RnaSeqMetrics.txt"))
 picard.metric <- merge(config_json[, .(Sample = full_name, condition)], picard.metric, by="Sample")
@@ -362,7 +366,7 @@ plot.picard.metric
 plot.rseqc.metric
 ```
 
-#### Read coverage distribution
+### Read coverage distribution
 - The gene body coverage is very similar in all the samples.
 `r if(rna_type == "classic_rev"){"  - Coverage across the gene is very even and shows very good coverage across whole genes "}else if(rna_type == "quant_fwd"){"  - Coverage across the gene is very good and shows the characteristic accumulation in 3'end of the genes in all the samples, which is typical from the library preparation using QuantSeq "}``r paste0("(Figure \\@ref(fig:picard-cov)).")`
 
@@ -402,7 +406,7 @@ plot.gene.cov
 ```
 
 
-#### Strand specificity
+### Strand specificity
 - According to the preparation kit reads should be `r if(strandness == "Forward"){"in the forward strand."}else if(strandness == "Reverse"){"in the reverse strand."}else if(strandness == "Unstranded"){"unstranded."}`
 - The analysis shows the strand-specificity of each library, but cannot be trusted with full confidence.
   - All the samples have ~`r rseqc.sense`% of the forward-strand specificity, ~`r rseqc.antisense`% of the reverse-strand specificity but ~`r rseqc.failed`% mappings cannot be determined.
@@ -413,7 +417,7 @@ plot.gene.cov
 plot.rseqc.infer.exp
 ```
 
-#### Read count assignment to genes
+### Read count assignment to genes
 ```{r, echo=FALSE}
 if(var.rsem == 1){
 rsem.assign <- fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
@@ -521,7 +525,7 @@ if(var.rsem==1){
 ```
 
 
-#### Biotypes
+### Biotypes
 - All the samples captured mainly protein-coding genes (Figure \@ref(fig:biotype)).
   - This is expected from polyA selection based libraries.
 
@@ -588,14 +592,9 @@ if(length(unique(pct$Sample)) == 1){
 ## Visualization
 
 ### IGV
-- You can upload the provided aligned bam files, the provided genome annotation and the gene annotation to the IGV and browse the alignments.
-- The IGV tutorial is available [here](http://software.broadinstitute.org/software/igv/userguide)
-- References are available to download (for example for IGV) [here](https://owncloud.cesnet.cz/index.php/s/pMa5OETWNfbqDKd).
-- Used references
-  - Homo_sapiens.GRCh38.dna.primary_assembly.fa
-  - Homo_sapiens.GRCh38.dna.primary_assembly.fa.fai
-  - Homo_sapiens.GRCh38.94.sorted.gtf
-  - Homo_sapiens.GRCh38.94.sorted.gtf.idx
+- Reference genomes and annotations for `r reference` are available to download on [Ensembl](https://www.ensembl.org/index.html) website.
+- You can upload the provided aligned bam files with the reference in IGV for visualization.
+- The IGV tutorial is available [here](http://software.broadinstitute.org/software/igv/userguide).
 - All the index files (.bai, .fai, .idx) must be in the same folder as their "parent" files otherwise IGV wouldn't open them.
 
 # DE analysis
@@ -616,7 +615,8 @@ if(config_json$conditions_to_compare[1] == "all"){
 
 if(length(ppnc.files)>1){
   for(i in 2:length(ppnc.files)){
-    cat("![](",ppnc.files[i],")")
+    cat("<div align='center'><img src=",ppnc.files[i]," width='80%'/></div>")
+    #cat("![](",ppnc.files[i],")")
     cat('\n\n')
   }
 }
@@ -668,7 +668,7 @@ if(config_json$conditions_to_compare[1] == "all"){
 if(length(sample.sample.files$path)>1){
   for(i in 2:length(sample.sample.files$path)){
     cat("<div align='center'><img src=",sample.sample.files$path[i]," width='80%'/></div>")
-    cat("![](",sample.sample.files$path[i],")")
+    #cat("![](",sample.sample.files$path[i],")")
     cat('\n\n')
   }
 }
@@ -760,7 +760,8 @@ volcano.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comp
 
 if(length(volcano.files)>1){
   for(i in 2:length(volcano.files)){
-    cat("![](",volcano.files[i],")")
+    cat("<div align='center'><img src=",volcano.files[i]," width='80%'/></div>")
+    #cat("![](",volcano.files[i],")")
     cat('\n\n')
   }
 }
@@ -775,7 +776,8 @@ ma.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",compariso
 
 if(length(ma.files)>1){
   for(i in 2:length(ma.files)){
-    cat("![](",ma.files[i],")")
+    cat("<div align='center'><img src=",ma.files[i]," width='80%'/></div>")
+    #cat("![](",ma.files[i],")")
     cat('\n\n')
   }
 }
@@ -790,7 +792,8 @@ top_de.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),
 if(length(top_de.files)>0){
   if(length(top_de.files)>1){
     for(i in 2:length(top_de.files)){
-      cat("![](",top_de.files[i],")")
+      cat("<div align='center'><img src=",top_de.files[i]," width='80%'/></div>")
+      #cat("![](",top_de.files[i],")")
       cat('\n\n')
     }
   }
