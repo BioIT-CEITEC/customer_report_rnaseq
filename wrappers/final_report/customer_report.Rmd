@@ -99,9 +99,9 @@ setorder(tabl_sample, condition, Sample)
 # default is good for few samples and Read coverage plot
 default_height <- 5
 # custom is needed if several samples >= 50 ? -> 10
-custom_height1 <- ifelse(num_samples < 50, default_height, 10)
+custom_height1 <- ifelse(num_samples < 40, default_height, 10)
 # another custom if the first one is not enough (rRNA plot can need higher value because of pair-end doubling the amount of samples) -> 15
-custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 50, 15, custom_height1)
+custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 40, 15, custom_height1)
 ```
 - The main goal of the experiment is to perform Differential Expression analysis.
 - In general, we have `r num_samples` `r species` samples. We have `r num_conditions` conditions, those conditions are sequenced in `r num_replicat` replicates, which is sufficient to obtain statistical significance.
@@ -756,7 +756,7 @@ fit_to_width(autofit(ftabl.de.de.all), max_width = 9.1)
 
 ```{r de-volcano, fig.cap = paste0("Volcano plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named."), echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
 
-volcano.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comparison,"/all/"), pattern = "volcano", full.names = T), pattern="Filt", value = T, invert = T), pattern="edgeR", value = T, invert = T), pattern="ggplot2.pdf.png", value=T)
+volcano.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comparison,"/all/"), pattern = "volcano", full.names = T), pattern="Filt", value = T, invert = T), pattern="edgeR", value = T, invert = T), pattern="ggplot2.png", value=T)
 
 if(length(volcano.files)>1){
   for(i in 2:length(volcano.files)){
@@ -771,7 +771,7 @@ knitr::include_graphics(volcano.files[1])
 
 ```{r de-ma-plot, fig.cap = paste0("MA plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named."), echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
 
-ma.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comparison,"/all/"), pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T), pattern="edgeR", value = T, invert = T), pattern="ggpubr.pdf.png", value=T)
+ma.files <- grep(grep(grep(list.files(path=paste0("../results/",DE,"/",comparison,"/all/"), pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T), pattern="edgeR", value = T, invert = T), pattern="ggpubr.png", value=T)
 
 if(length(ma.files)>1){
   for(i in 2:length(ma.files)){
@@ -786,7 +786,7 @@ knitr::include_graphics(ma.files[1])
 
 ```{r de-top-de, fig.cap = paste0("Heatmap of maximum top 20 differentially expressed genes (DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1)."), echo=FALSE, out.height="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
 
-top_de.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),pattern ="heatmap_selected_orderBaseMeanCluster.pdf.png", full.names = T)
+top_de.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
 if(length(top_de.files)>0){
   if(length(top_de.files)>1){
     for(i in 2:length(top_de.files)){
