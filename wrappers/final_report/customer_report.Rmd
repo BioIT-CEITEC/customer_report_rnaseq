@@ -354,7 +354,7 @@ plot.rseqc.metric <- ggplot(rseqc.metric.tbl, aes(Sample, value, fill = factor(v
 ```
 
 - Evaluation of the mapped genomic regions is very comparable
-- All samples had approximately almost no content of intronic reads ~`r picard.intron`% counted over bases as well as ~`r rseqc.intron`% counted over reads which is expected for polyA selection library protocols
+- All samples had approximately a low content of intronic reads ~`r picard.intron`% counted over bases as well as ~`r rseqc.intron`% counted over reads which is expected for polyA selection library protocols
 - All samples had majority of reads ~`r picard.mrna`% counted over bases as well as ~`r rseqc.mrna`% counted over reads mapped within coding regions (`r paste0("Figures \\@ref(fig:picard-map-loc) and \\@ref(fig:rseqc-map-loc)")`).
 - All samples are good quality and can be safely used for Differential expression analysis.
 
