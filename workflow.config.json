@@ -33,7 +33,15 @@
     "type_of_extraction",
     "strandness",
     "condition",
-    "replicate"
+    "replicate",
+    "qc_samtools",
+    "qc_dupradar_RNA",
+    "qc_qualimap_RNA",
+    "qc_picard_RNA",
+    "qc_biotypes_RNA",
+    "qc_fastq_screen_RNA",
+    "qc_RSeQC_RNA",
+    "biobloom"
   ],
   "gui_params": {
     "primary": {
@@ -48,48 +56,7 @@
         "default": "nicolas.blavet@ceitec.muni.cz"
       }
     },
-    "detailed": {
-      "qc_samtools": {
-        "label": "QC samtools",
-        "type": "bool",
-        "default": true
-      },
-      "qc_dupradar_RNA": {
-        "label": "QC dupradar RNA",
-        "type": "bool",
-        "default": true
-      },
-      "qc_qualimap_RNA": {
-        "label": "QC qualimap RNA",
-        "type": "bool",
-        "default": true
-      },
-      "qc_picard_RNA": {
-        "label": "QC picard RNA",
-        "type": "bool",
-        "default": true
-      },
-      "qc_biotypes_RNA": {
-        "label": "QC biotypes RNA",
-        "type": "bool",
-        "default": true
-      },
-      "qc_fastq_screen_RNA": {
-        "label": "QC fastq screen RNA",
-        "type": "bool",
-        "default": true
-      },
-      "qc_RSeQC_RNA": {
-        "label": "QC RSeQC RNA",
-        "type": "bool",
-        "default": true
-      },
-      "biobloom": {
-        "label": "Biobloom tools",
-        "type": "bool",
-        "default": false
-      }
-    },
+    "detailed": {},
     "samples": {
       "condition": {
         "label": "Condition",
