@@ -19,9 +19,7 @@
   },
   "general_params": [
     "entity_name",
-    "sample_name",
-    "condition",
-    "replicate"
+    "sample_name"
   ],
   "requested_params": [
     "is_paired",
@@ -33,7 +31,9 @@
     "UMI",
     "RNAseq_type",
     "type_of_extraction",
-    "strandness"
+    "strandness",
+    "condition",
+    "replicate"
   ],
   "gui_params": {
     "primary": {
