@@ -316,6 +316,17 @@ rseqc.intron <- round(mean(rseqc.metric$introns_tag_pct),0)
 picard.mrna <- round(mean(picard.metric$PCT_MRNA_BASES),0)
 rseqc.mrna <- round(mean(rseqc.metric$mrna_tag_pct),0)
 
+if(picard.intron >= 40){
+  intron.count <- "very high"
+}else if(picard.intron >= 20 & picard.intron < 40){
+  intron.count <- "high"
+}else if(picard.intron >= 5 & picard.intron < 20){
+  intron.count <- "low"
+}else if(picard.intron < 5){
+  intron.count <- "very low"
+}
+
+
 picard.metric.tbl <- picard.metric[, .(Sample, Coding = CODING_BASES/PF_BASES, UTR = UTR_BASES/PF_BASES, Intronic = INTRONIC_BASES/PF_BASES, Intergenic = INTERGENIC_BASES/PF_BASES, not_aligned = PF_NOT_ALIGNED_BASES/PF_BASES)]
 picard.metric.tbl <- melt(picard.metric.tbl, id.vars = "Sample")
 picard.metric.tbl <- picard.metric.tbl[, value := 100*value]
@@ -354,7 +365,7 @@ plot.rseqc.metric <- ggplot(rseqc.metric.tbl, aes(Sample, value, fill = factor(v
 ```
 
 - Evaluation of the mapped genomic regions is very comparable
-- All samples had approximately a low content of intronic reads ~`r picard.intron`% counted over bases as well as ~`r rseqc.intron`% counted over reads which is expected for polyA selection library protocols
+- All samples had a `r intron.count` content of intronic reads ~`r picard.intron`% counted over bases as well as ~`r rseqc.intron`% counted over reads which is expected for polyA selection library protocols
 - All samples had majority of reads ~`r picard.mrna`% counted over bases as well as ~`r rseqc.mrna`% counted over reads mapped within coding regions (`r paste0("Figures \\@ref(fig:picard-map-loc) and \\@ref(fig:rseqc-map-loc)")`).
 - All samples are good quality and can be safely used for Differential expression analysis.
 
@@ -678,8 +689,7 @@ knitr::include_graphics(sample.sample.files$path[1])
 
 ## Differential expression results
 
-- Please note that for visualization purposes we had to set a predefined cut-off value for some of the parameters (adj.p-value and logFC)
-  - **Please read the disclaimer at the beginning of the report for more information about selected cut-off values!**
+- Please note that for visualization purposes we had to set a predefined cut-off value for some of the parameters (adj.p-value is set to 0.05 and log2FC is set to -1/+1)
 
 - In this section, we might provide several results as the number of compared conditions is variable between experiments
 - Differential gene expression was calculated by two separate tools - edgeR and DESeq2
@@ -693,7 +703,7 @@ knitr::include_graphics(sample.sample.files$path[1])
 
 - Number of DE genes with default cut-off values is summarized in Table \@ref(tab:tabl-de-de)
   - Please note this is only a tentative view on approximate differences between the conditions and not final results.
-- Volcano plot visualization visualizes log2FC (x-axis) and adj.p-value (y-axis).
+- Volcano plot visualization displays log2FC (x-axis) and adj.p-value (y-axis).
   - Colored dots highlight genes above the defined adj.p-value cut-off value, blue lines show defined log2FC cut-off value.
   - Volcano plot from DESeq2 results can be found in Figure \@ref(fig:de-volcano).
 - MA plot visualizes mean expression (x-axis) and log2FC (y-axis).
@@ -703,7 +713,7 @@ knitr::include_graphics(sample.sample.files$path[1])
   - The selection of a maximum 20 genes is always based on compared conditions but visualizes expression values from all other conditions if applicable.
 
 ```{r, results="asis", echo=FALSE}
-capt <- paste0("Summary or number of DE genes based on default cut-off values from all three DE calculations. The first two columns are counts with both adj.p-value and logFC cut-off, the other two columns are only with adj.p-value cut-off. DESeq2 results, DESeq2 results without independent filtering (noIndFilt) and edgeR results are shown.")
+capt <- paste0("Summary or number of DE genes based on default cut-off values from all three DE calculations. The first two columns are counts with both adj.p-value and log2FC cut-off, the other two columns are only with adj.p-value cut-off. DESeq2 results, DESeq2 results without independent filtering (noIndFilt) and edgeR results are shown.")
 ```
 
 
@@ -742,7 +752,7 @@ for(i in 1:length(comparison)){
 
 #knitr::kable(x = tabl.de.de, booktabs = TRUE, caption = capt, format.args = list(big.mark = ","))
 edgeR.tag.pos <- which(tabl.de.de.all == "edgeR", arr.ind = TRUE) # find row and column with "edgeR"
-ftabl.de.de.all <- flextable(tabl.de.de.all[,.(Comparison, Analysis, "Up (adj.pval & logfc)"=up_pval_logfc, "Down (adj.pval & logfc)"=down_pval_logfc,"Up (adj.pval)"=up_pval,"Down (adj.pval)"=down_pval)]) # change the table to a flextable object
+ftabl.de.de.all <- flextable(tabl.de.de.all[,.(Comparison, Analysis, "Up (adj.pval & log2FC)"=up_pval_logfc, "Down (adj.pval & log2FC)"=down_pval_logfc,"Up (adj.pval)"=up_pval,"Down (adj.pval)"=down_pval)]) # change the table to a flextable object
 
 # apply conditional formating - for each row with "edgeR" add a horizontal line
 for(i in 1:nrow(edgeR.tag.pos)) {
@@ -786,7 +796,7 @@ knitr::include_graphics(ma.files[1])
 ```
 
 
-```{r de-top-de, fig.cap = paste0("Heatmap of maximum top 20 differentially expressed genes (DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1)."), echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
+```{r de-top-de, fig.cap = paste0("Heatmap of maximum top 20 differentially expressed genes (DESeq2 results with independent filtering, adj.p-value < 0.05, log2FC >= +/-1)."), echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
 
 top_de.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
 if(length(top_de.files)>0){
@@ -805,62 +815,62 @@ knitr::include_graphics(top_de.files[1])
 ## Used statistics and selection of differentially expressed genes
 
 ### Log2FC and adjusted p-value
-- Differences between the conditions are expressed in **log2FC** (log2 of fold-change)
-    - This is calculated by comparing average expression one condition vs the other and then the log2 transformation
-    - This makes the results symmetric around 0 and it’s easier to understand
+- Differences between the conditions are expressed in **log2FC** (log2 of fold-change).
+    - This is calculated by comparing average expression one condition vs the other and then the log2 transformation.
+    - This makes the results symmetric around 0 and it’s easier to understand.
     - For example: -1 is a 2-fold decrease of the expression, +1 is a 2-fold increase of the expression.
     - Please note it always depends on the “direction” of the comparison - if you are not sure just compare normalized counts of one gene to see from which “direction” the log2FC was calculated.
-- Calculation of DE genes consists of a very high number of comparisons (thousands of genes = thousands of comparisons)
-  - For this reason, we need to correct raw p-values for false discovery rate which emerges from the number of comparisons
-  - This results in **adjusted p-values** (adj.pval, adj. p-values, adj. pval)
-    - In case you want to use some filtering or selection based on the statistical evidence you should ALWAYS USE adjusted p-values and never raw p-values
-    - Raw p-values can be used only in very special cases and always require a discussion with bioinformatician or statistician
+- Calculation of DE genes consists of a very high number of comparisons (thousands of genes = thousands of comparisons).
+  - For this reason, we need to correct raw p-values for false discovery rate which emerges from the number of comparisons.
+  - This results in **adjusted p-values** (adj.pval, adj. p-values, adj. pval).
+    - In case you want to use some filtering or selection based on the statistical evidence you should ALWAYS USE adjusted p-values and never raw p-values.
+    - Raw p-values can be used only in very special cases and always require a discussion with bioinformatician or statistician.
 
 ## Note on selecting of differentially expressed genes (DEG)
-- Selection of differentially expressed genes always has to be primarily based on the biological background of the experiment and the hypothesis
-- A lot of people select DEG based on a combination of cut-off values
-- This might be tricky as no predefined cut-off values exist and it depends on the experiment itself, on the amount of false-positive results you are willing to accept and on the minimum level of changes if any
-- Commonly used statistical values, such as logFC and adj.p-value, should help you to confirm the hypothesis, results or the observations and not lead the discovery itself
+- Selection of differentially expressed genes always has to be primarily based on the biological background of the experiment and the hypothesis.
+- A lot of people select DEG based on a combination of cut-off values.
+- This might be tricky as no predefined cut-off values exist and it depends on the experiment itself, on the amount of false-positive results you are willing to accept and on the minimum level of changes if any.
+- Commonly used statistical values, such as log2FC and adj.p-value, should help you to confirm the hypothesis, results or the observations and not lead the discovery itself.
 - If you decide to go for some cut-off values, do not blindly select only genes above the thresholds!
   - For example, the frequently used cut-off value of adj.p-value 0.05 at which you will reject the hypothesis the gene is not expressed the same: one gene will have adj.p-value 0.0499 which would pass this cut-off whereas the second gene will have adj.p-value of 0.0501 and would not pass the cut-off.  The difference between the genes is negligible and still, the first gene would and the other gene would not be accepted if a strict cut-off value would be set.
-  - Another “issue” with adj.p-value is when the groups we are comparing are heterogeneous (for example clinical samples). In this case, adj.p-value are generally much higher.  In this situation, we should strongly focus on biological effect and hypothesis and use statistics to either confirm the observation or to function for prioritization of the results
-  - The similar thing applies to logFC
-  - In the case of logFC, we also have to consider the effect of the expression of individual genes. For example, the frequently used cut-off value of 1 (2x fold-change): A gene with expression 10 in one group and 5 in other group results in logFC 1 and would pass the cut-off. The overall expression of the gene is negligible and most likely the change doesn’t have any biological effect. Another gene has an expression of 10000 in one group and 5001 in another group. This gene would not pass the cut-off value but most likely the change will have some kind of biological effect.
-  - Sometimes small logFC might be more important than high logFC and the same applies to adj.p-value.
-- We should always choose the genes based on the overall properties of the gene and the comparison between conditions
+  - Another “issue” with adj.p-value is when the groups we are comparing are heterogeneous (for example clinical samples). In this case, adj.p-value are generally much higher.  In this situation, we should strongly focus on biological effect and hypothesis and use statistics to either confirm the observation or to function for prioritization of the results.
+  - The similar thing applies to log2FC.
+  - In the case of log2FC, we also have to consider the effect of the expression of individual genes. For example, the frequently used cut-off value of 1 (2x fold-change): A gene with expression 10 in one group and 5 in other group results in log2FC 1 and would pass the cut-off. The overall expression of the gene is negligible and most likely the change does not have any biological effect. Another gene has an expression of 10000 in one group and 5001 in another group. This gene would not pass the cut-off value but most likely the change will have some kind of biological effect.
+  - Sometimes small log2FC might be more important than high log2FC and the same applies to adj.p-value.
+- We should always choose the genes based on the overall properties of the gene and the comparison between conditions.
 
 ## Output files
-- Results are organized by compared conditions
-  - The compared conditions are always stated in the name of the folder
-  - All the results in the corresponding folder are based on the currently compared conditions but in some of the cases other samples and conditions are added to the visualization/summaries as well
+- Results are organized by compared conditions.
+  - The compared conditions are always stated in the name of the folder.
+  - All the results in the corresponding folder are based on the currently compared conditions but in some of the cases other samples and conditions are added to the visualization/summaries as well.
   - For example: **cond1_vs_cond2** compares cond1 to cond2. In the DE results then - positive log2FC signalizes more expression in cond1 (or less in cond2) and negative log2FC signalizes less expression in cond2 (or more in cond1).
-- Main output files are **DESeq2.tsv**, **DESeq2_noIndFilt.tsv**, and **edgeR.tsv**
+- Main output files are **DESeq2.tsv**, **DESeq2_noIndFilt.tsv**, and **edgeR.tsv**.
 - All three main results contain several columns:
-  - **first column (no name)** - Ensembl gene id
-  - **baseMean** - an average expression of genes from samples from compared conditions
-  - **log2FoldChange** - log2FC of the gene expression difference. The difference is calculated by comparing average expression of samples of one condition with the other samples from the other condition
-  - **stat and lfcSE** (in DESeq2); LR and tgw.Disp (in edgeR) - results of the statistical test performed by the tool and variation/dispersion of the gene
-  - **pvalue** - a raw p-value of the comparison
-  - **padj** - multiple testing correction (Benjamini-Hochberg correction) p-value of the comparison. In case you are comparing and analyzing RNA-Seq use this as the evaluation of the statistical significance of the comparison
-  - **gene_name** - common gene name
-  - **gene_biotype** - biotype of the gene
-  - **_normCounts** - normalized gene expression for each sample (not only the samples in the current comparison)
-  - **_rawCounts** - raw read counts for each sample (not only the samples in the current comparison)
-- The full description is given below
+  - **first column (no name)** - Ensembl gene id.
+  - **baseMean** - an average expression of genes from samples from compared conditions.
+  - **log2FoldChange** - log2FC of the gene expression difference. The difference is calculated by comparing average expression of samples of one condition with the other samples from the other condition.
+  - **stat and lfcSE** (in DESeq2); LR and tgw.Disp (in edgeR) - results of the statistical test performed by the tool and variation/dispersion of the gene.
+  - **pvalue** - a raw p-value of the comparison.
+  - **padj** - multiple testing correction (Benjamini-Hochberg correction) p-value of the comparison. In case you are comparing and analyzing RNA-Seq use this as the evaluation of the statistical significance of the comparison.
+  - **gene_name** - common gene name.
+  - **gene_biotype** - biotype of the gene.
+  - **_normCounts** - normalized gene expression for each sample (not only the samples in the current comparison).
+  - **_rawCounts** - raw read counts for each sample (not only the samples in the current comparison).
+- The full description is given below.
 
-- Additional visualizations and/or a different combination of visualization is available upon request after discussion
+- Additional visualizations and/or a different combination of visualization is available upon request after discussion.
 
 ## General/common outputs
-- **xxx** in the name of some pdf files in the description below represents compared conditions
+- **xxx** in the name of some pdf files in the description below represents compared conditions.
 - **background.txt** – list of genes that were expressed in your samples (=gene was expressed in at least one of the samples). The first column is Ensembl gene ID, second is common gene name.
 - **norm_counts.xlsx** - DESeq2 normalized counts (~expression) for all genes and all samples. Can be used for visualization of the data.
   - **norm_counts.tsv** - the same information as in norm_counts.xlsx but in a text form.
-- **all_sig_genes_normCounts.pdf** – significantly DEG (here, “default cut-off” adj.p-value 0.05 and logFC 1 is considered) expression visualization. Selection of DE genes is based on the particular comparison but all conditions/samples are plotted. This is based on DESeq2 results.
-- **counts_barplot.pdf** - visualization of used (raw) read counts per sample
+- **all_sig_genes_normCounts.pdf** – significantly DEG (here, “default cut-off” adj.p-value 0.05 and log2FC 1 is considered) expression visualization. Selection of DE genes is based on the particular comparison but all conditions/samples are plotted. This is based on DESeq2 results.
+- **counts_barplot.pdf** - visualization of used (raw) read counts per sample.
 - **DESeq2.tsv** – main results from differential gene expression by DESeq2. Description of the columns is given above. tsv is a tab-separated source file for the xlsx.
 - **DESeq2_noIndFilt.tsv** – results from differential gene expression without independent gene filtering (see Independent filtering and Cooks cut-off in DESeq2 manual). tsv is a tab-separated source file for the xlsx.
-- **DESeq2_de_genes_check.txt** and **DESeq2_de_genes_check_noIndFilt.txt** – basic summary of differential expression. “Default” adj.p-value of 0.05 and logFC of 1 are used. The upper part of the table considers only adj.p-value cut-off value, the lower part considers adj.p-value and logFC. This servers only for a  demonstration of the possible effect, not as a final result
-- **DESeq2_design_control.txt** - a control file for used sample design
+- **DESeq2_de_genes_check.txt** and **DESeq2_de_genes_check_noIndFilt.txt** – basic summary of differential expression. “Default” adj.p-value of 0.05 and log2FC of 1 are used. The upper part of the table considers only adj.p-value cut-off value, the lower part considers adj.p-value and log2FC. This servers only for a  demonstration of the possible effect, not as a final result.
+- **DESeq2_design_control.txt** - a control file for used sample design.
 - **edgeR.tsv** – main results from differential gene expression by edgeR. tsv is a tab-separated source file for the xlsx.
 - **edgeR_de_genes_check.txt** - same as in case of DESeq2 - “quick and dirty” check of the effect to get a general idea about the differences.
 - **heatmap_selected_orderBaseMean.pdf** – heatmap of maximum top 20 most differentially expressed genes (based on adj. p-value) ordered by an average expression. Blue means low expression, red means high expression. The maximum top 20 genes are selected based on the compared groups but all samples are visualized. This is based on DESeq2 results.
@@ -868,113 +878,113 @@ knitr::include_graphics(top_de.files[1])
 - **heatmaps_samples.pdf** - heatmap visualization of sample clustering based on gene expression. Several normalizations are applied but the first one usually looks the best.
 - **MAplot_xxx_vs_xxx_ggpubr.pdf** - MA plots for the gene expression. Maximum top 20 most DEG (by adj.p-value) are named. This is based on DESeq2 results.
 - **MAplot_xxx_vs_xxx_noIndFilt_ggpubr.pdf** -  the same as above but without independent filtering.
-- **MDS_plot.pdf** - MDS-based visualization of sample clustering by expression
-- **overlap_DESeq2_edgeR_de.tsv** and **overlap_DESeq2_edgeR_venn.pdf** – overlap between DE genes between DESeq2 and edgeR calculation. In default, genes with adj. p-value <0.05 and logFC +/- 1 are included. Columns DESeq2 and edgeR contain values TRUE or FALSE and this represents whether the resulting gene was included in the results by an individual tool.
-- **pre_post_norm_counts.pdf** - visualization of used raw (top figure) and normalized (bottom) read counts per sample
-- **sample_to_sample_PCA.pdf** - PCA-based visualization of sample clustering by expression. The first figure shows first two PCA components, the second shows all combinations of first three components (~3D look)
+- **MDS_plot.pdf** - MDS-based visualization of sample clustering by expression.
+- **overlap_DESeq2_edgeR_de.tsv** and **overlap_DESeq2_edgeR_venn.pdf** – overlap between DE genes between DESeq2 and edgeR calculation. In default, genes with adj. p-value <0.05 and log2FC +/- 1 are included. Columns DESeq2 and edgeR contain values TRUE or FALSE and this represents whether the resulting gene was included in the results by an individual tool.
+- **pre_post_norm_counts.pdf** - visualization of used raw (top figure) and normalized (bottom) read counts per sample.
+- **sample_to_sample_PCA.pdf** - PCA-based visualization of sample clustering by expression. The first figure shows first two PCA components, the second shows all combinations of first three components (~3D look).
 - **volcanoplot_xxx_vs_xxx_ggplot2.pdf** – volcano plot of the results from DESeq2. Maximum top 20 most DEG (based on adj.p-value) are depicted. This is based on DESeq2.
 - **volcanoplot_xxx_vs_xxx_noIndFilt_ggplot2.pdf** - same as above but without independent filtering.
 
 - Please note the differences between MA and Volcano plots - different X and Y axes giving you a different view on the results.
 
-- Alignments can be visualized in genome browsers such as [IGV](http://software.broadinstitute.org/software/igv/), [Tablet](https://ics.hutton.ac.uk/tablet/) or [Savant](http://www.genomesavant.com/p/savant/index)
-  - For more details please read the manual or contact your bioinformatician
-- If the mapping files were shared through the online storage please download them as soon as possible and let us know so we can delete them
+- Alignments can be visualized in genome browsers such as [IGV](http://software.broadinstitute.org/software/igv/), [Tablet](https://ics.hutton.ac.uk/tablet/) or [Savant](http://www.genomesavant.com/p/savant/index).
+  - For more details please read the manual or contact your bioinformatician.
+- If the mapping files were shared through the online storage please download them as soon as possible and let us know so we can delete them.
 
 # Output files (alphabetical order)
 ## Folders
 ### Raw_fastq
-- Provided raw sequenced fastq files
+- Provided raw sequenced fastq files.
 
 ### Alignment
-- Provided alignments in bam format
+- Provided alignments in bam format.
 
 ### QC_general
-- html file summarizing most of the QC done
+- html file summarizing most of the QC done.
 
 ### FeatureCounts_expression
-- Gene expression raw counts for each sample
+- Gene expression raw counts for each sample.
 
-### RSEM_expression
-- Gene and transcript expression for each sample
-- The normalized expressions are summarized in TPM column
+`r if(var.rsem==1){"### RSEM_expression"}`
+`r if(var.rsem==1){"- Gene and transcript expression for each sample."}`
+`r if(var.rsem==1){"- The normalized expressions are summarized in TPM column."}`
 
-#### Files
-- .genes.results.tsv - gene expression estimates
-- .isoforms.results.tsv - transcript expression estimates
+`r if(var.rsem==1){"#### Files"}`
+`r if(var.rsem==1){"- .genes.results.tsv - gene expression estimates."}`
+`r if(var.rsem==1){"- .isoforms.results.tsv - transcript expression estimates."}`
 
 ### UCSC_signals
-- Alignment signal for UCSC browser
+- Alignment signal for UCSC browser.
 - Two signal “types” per sample are provided:
-  - Unique - signal only from uniquely mapped reads
-  - UniqueMultiple - signal from both uniquely and multi-mapped reads
+  - Unique - signal only from uniquely mapped reads.
+  - UniqueMultiple - signal from both uniquely and multi-mapped reads.
 - Each set is then split into two:
-  - str1 - signal coming from the alignment to the plus strand of DNA
-  - str2 - signal coming from the alignment to the minus strand of DNA
-- If you have sense/forward specific library, the signal strand corresponds to the strand of the annotated gene (mapping ----> corresponds to the + strand annotation)
-- If you have antisense/reverse specific library, the signal strand corresponds to the opposite strand gene annotation (mapping <---- corresponds to the + strand annotation)
+  - str1 - signal coming from the alignment to the plus strand of DNA.
+  - str2 - signal coming from the alignment to the minus strand of DNA.
+- If you have sense/forward specific library, the signal strand corresponds to the strand of the annotated gene (mapping ----> corresponds to the + strand annotation).
+- If you have antisense/reverse specific library, the signal strand corresponds to the opposite strand gene annotation (mapping <---- corresponds to the + strand annotation).
 
 ### DE_analysis
-- All files related to Differentially expressed genes analysis
+- All files related to Differentially expressed genes analysis.
 
 ## Gene ontology, GSEA and pathway analysis
-- This section summarizes possible follow-up analyses/interpretations of the differential expression results
-- In the following analyses the input can sometimes be specified as Ensembl ID (usually provided in the results unless noted otherwise), some tools required common gene names (usually provided in the results as well) or Entrez ID (NCBI/RefSeq)
-  - This is always specified in the manual of the tool
-- GO and/or Pathway analysis can be performed for up-/down-regulated genes as well as for the whole list of de-regulated genes
-  - Both of the analyses give a different view of the results
-    - Analysis of separate up-/down-regulated genes gives you a direct answer on the change, in particular, GO or Pathway and the “direction” of the regulation
-    - Analysis of all de-regulated genes (up-/down-regulated together) gives you a more broad view of the total change
-  - Both of the results are helpful but you have to realize what kind of information you can get and what kind of answer they provide
+- This section summarizes possible follow-up analyses/interpretations of the differential expression results.
+- In the following analyses the input can sometimes be specified as Ensembl ID (usually provided in the results unless noted otherwise), some tools required common gene names (usually provided in the results as well) or Entrez ID (NCBI/RefSeq).
+  - This is always specified in the manual of the tool.
+- GO and/or Pathway analysis can be performed for up-/down-regulated genes as well as for the whole list of de-regulated genes.
+  - Both of the analyses give a different view of the results.
+    - Analysis of separate up-/down-regulated genes gives you a direct answer on the change, in particular, GO or Pathway and the “direction” of the regulation.
+    - Analysis of all de-regulated genes (up-/down-regulated together) gives you a more broad view of the total change.
+  - Both of the results are helpful but you have to realize what kind of information you can get and what kind of answer they provide.
 
 ### Gene Ontology
-- Input for gene ontology (GO) testing is usually a list of differentially expressed genes
-  - You can either use filtering by some cut-off value(s) or select top X genes sorted by adj.p-value/logFC/...
-- You can either analyze all DEG or separately down-/up-regulated
-  - Please see the section above for more details
-- A second input is gene background/universe
-  - This is a list of all genes expressed in the comparison
-  - This list is used as a “reference” for the statistical evaluation of significantly changed GO groups
-- For “common” organisms like human or mouse, a very nice tool is [GOrilla](http://cbl-gorilla.cs.technion.ac.il/) with very nice figures and direct export to Excel
-  - It also contains links to [REViGO](http://revigo.irb.hr/) which can help you to summarize the GO groups into more general categories
-- To simply browse GO categories you can use [QuickGO](http://www.ebi.ac.uk/QuickGO/) or [Ontology Lookup Service](http://www.ebi.ac.uk/ols/index)
+- Input for gene ontology (GO) testing is usually a list of differentially expressed genes.
+  - You can either use filtering by some cut-off value(s) or select top X genes sorted by adj.p-value/log2FC/...
+- You can either analyze all DEG or separately down-/up-regulated.
+  - Please see the section above for more details.
+- A second input is gene background/universe.
+  - This is a list of all genes expressed in the comparison.
+  - This list is used as a "reference" for the statistical evaluation of significantly changed GO groups.
+- For "common" organisms like human or mouse, a very nice tool is [GOrilla](http://cbl-gorilla.cs.technion.ac.il/) with very nice figures and direct export to Excel.
+  - It also contains links to [REViGO](http://revigo.irb.hr/) which can help you to summarize the GO groups into more general categories.
+- To simply browse GO categories you can use [QuickGO](http://www.ebi.ac.uk/QuickGO/) or [Ontology Lookup Service](http://www.ebi.ac.uk/ols/index).
 - Another option to filter down GO categories is [AmiGO2](http://amigo.geneontology.org/amigo/dd_browse).
 - If, for whatever reason, you don't have gene ontology annotations but just sequences of your genes you can still get GO analysis. [Blast2GO](https://www.blast2go.com/) is a nice service combining BLAST similarity search with GO annotation to produce GO analysis. There is a free and paid version where the free version gives you basic annotations and have some pretty visualizations. A tutorial is for example here 	https://www.youtube.com/watch?v=GqSqS_izlYg&t=335s.
-- Other tools include [g:Profiler](https://biit.cs.ut.ee/gprofiler/) and many more
+- Other tools include [g:Profiler](https://biit.cs.ut.ee/gprofiler/) and many more.
 
 ### Pathway analysis
-- Input data are very similar to GO (mentioned above)
+- Input data are very similar to GO (mentioned above).
 - [PANTHER](http://www.pantherdb.org ) and [Reactome](http://www.reactome.org/) provide quite nice analysis for the Pathway analysis and exploration.
-  - PANTHER recently started to include GO testing as well so it became a multi-purpose tool
-- [KEGG](http://www.genome.jp/kegg/kegg2.html) is another commonly used tools for pathway analysis but it is not that easy to interpret the data unless you know which pathways should be involved
+  - PANTHER recently started to include GO testing as well so it became a multi-purpose tool.
+- [KEGG](http://www.genome.jp/kegg/kegg2.html) is another commonly used tools for pathway analysis but it is not that easy to interpret the data unless you know which pathways should be involved.
 
 ### Gene Set  Enrichment
-- Input data to Gene Set Enrichment are a bit different than in previous cases
-- You do NOT subsample your results but you take a whole list of gene expression results and sort it according to specified criteria (logFC, adj.p-value, ...)
-  - In the case of logFC, you have the most positively changed genes on the top and the most negatively changed genes at the bottom and non-changed genes are in the middle but they are still in the SAME list
-  - The enrichment then compares different parts of the list and looks for patterns or similarities
-- One of the most used is probably [GSEA](http://software.broadinstitute.org/gsea/index.jsp)
-  - It’s a standalone tool which takes some time to learn but provides reasonable results
-- [GOrilla](http://cbl-gorilla.cs.technion.ac.il/) also offers gene enrichment analysis
+- Input data to Gene Set Enrichment are a bit different than in previous cases.
+- You do NOT subsample your results but you take a whole list of gene expression results and sort it according to specified criteria (log2FC, adj.p-value, ...)
+  - In the case of log2FC, you have the most positively changed genes on the top and the most negatively changed genes at the bottom and non-changed genes are in the middle but they are still in the SAME list.
+  - The enrichment then compares different parts of the list and looks for patterns or similarities.
+- One of the most used is probably [GSEA](http://software.broadinstitute.org/gsea/index.jsp).
+  - It’s a standalone tool which takes some time to learn but provides reasonable results.
+- [GOrilla](http://cbl-gorilla.cs.technion.ac.il/) also offers gene enrichment analysis.
 - Another option is to use [DAVID](https://david.ncifcrf.gov/home.jsp) which is also a multipurpose tool but I do not recommend it too much since the interpretation of the results might be difficult and very subjective. But it can still be used if there is no other option or you find it easy to work with.
 
 ### Protein-protein interactions
 - [HIPPIE](http://cbdm-01.zdv.uni-mainz.de/~mschaefer/hippie/index.php) provides reliable and meaningful human protein-protein interaction networks. It is suitable more for gene-by-gene exploration.
 - [STRING](https://string-db.org/cgi/input.pl?UserId=4hzU6jHtBui6&sessionId=fokvQzUPEo8M&input_page_show_search=off) is a database of known and predicted protein-protein interactions supported by SIB, CPR - NNF and EMBL. This includes physical, functional as well as predicted interactions.
-- [BioGRID](https://thebiogrid.org/) is an interaction repository with data compiled through comprehensive curation efforts. Contains interactions extracted from publications for major model organisms
+- [BioGRID](https://thebiogrid.org/) is an interaction repository with data compiled through comprehensive curation efforts. Contains interactions extracted from publications for major model organisms.
 
 ### Multipurpose tools and other
-- There are other tools/approaches to help with the secondary analysis
-- [Enrichr](http://amp.pharm.mssm.edu/Enrichr/) is nice and simple to run the tool to identify enriched pathways, different gene summaries, and many others. It provides many various plots and tables
+- There are other tools/approaches to help with the secondary analysis.
+- [Enrichr](http://amp.pharm.mssm.edu/Enrichr/) is nice and simple to run the tool to identify enriched pathways, different gene summaries, and many others. It provides many various plots and tables.
 - [GeneMANIA](http://genemania.org/) visualizes genes and their interaction, co-expression as well as Gene Ontology, etc. It is suitable more for gene-by-gene exploration.
-- [ConsensusPathDB-human](http://cpdb.molgen.mpg.de/) integrates several different approaches including pathway analysis
+- [ConsensusPathDB-human](http://cpdb.molgen.mpg.de/) integrates several different approaches including pathway analysis.
 - [BioCyc Database Collection](https://biocyc.org/) is a collection of 9387 Pathway/Genome Databases (PGDBs), plus software tools for understanding their data.
 - [KEGG database](http://www.genome.jp/kegg/kegg2.html) is a database resource that integrates genomic, chemical and systemic functional information. In particular, gene catalogs from completely sequenced genomes are linked to higher-level systemic functions of the cell, the organism, and the ecosystem. KEGG accepts common gene names and NCBI gene/transcript ID and UniProt ID. For the analysis, you can use http://www.genome.jp/kegg/tool/map_pathway2.html or http://www.genome.jp/kegg/tool/map_pathway1.html. KEGG looks for genes in your list and tries to highlight the pathway where selected genes have some kind of association.
 - [Venny](http://bioinfogp.cnb.csic.es/tools/venny/) is a nice tool for a simple visualization of overlaps between up to three sets of data.
 
 ### R/Bioconductor
-- If you know how to use **R** you can check [**clusterProfiler**](https://bioconductor.org/packages/release/bioc/html/clusterProfiler.html) which provides many different analyses types and has very nice manual and tutorials
-- [**topGO**](http://bioconductor.org/packages/release/bioc/html/topGO.html) is another R package which offers both gene ontology and gene set enrichment analysis
-- [**ReactomePA**](https://bioconductor.org/packages/release/bioc/html/ReactomePA.html) allows for analysis of pathways with a slightly different source than KEGG
-- To add GO categories (and other interesting information) to your list of genes, you can try [**biomaRt**](https://bioconductor.org/packages/release/bioc/html/biomaRt.html) which can directly load the Ensembl database
+- If you know how to use **R** you can check [**clusterProfiler**](https://bioconductor.org/packages/release/bioc/html/clusterProfiler.html) which provides many different analyses types and has very nice manual and tutorials.
+- [**topGO**](http://bioconductor.org/packages/release/bioc/html/topGO.html) is another R package which offers both gene ontology and gene set enrichment analysis.
+- [**ReactomePA**](https://bioconductor.org/packages/release/bioc/html/ReactomePA.html) allows for analysis of pathways with a slightly different source than KEGG.
+- To add GO categories (and other interesting information) to your list of genes, you can try [**biomaRt**](https://bioconductor.org/packages/release/bioc/html/biomaRt.html) which can directly load the Ensembl database.
 
