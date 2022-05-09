@@ -319,6 +319,16 @@ rseqc.intron <- round(mean(rseqc.metric$introns_tag_pct),0)
 picard.mrna <- round(mean(picard.metric$PCT_MRNA_BASES),0)
 rseqc.mrna <- round(mean(rseqc.metric$mrna_tag_pct),0)
 
+if(picard.intron >= 40){
+  intron.count <- "very high"
+}else if(picard.intron >= 20 & picard.intron < 40){
+  intron.count <- "high"
+}else if(picard.intron >= 5 & picard.intron < 20){
+  intron.count <- "low"
+}else if(picard.intron < 5){
+  intron.count <- "very low"
+}
+
 picard.metric.tbl <- picard.metric[, .(Sample, Coding = CODING_BASES/PF_BASES, UTR = UTR_BASES/PF_BASES, Intronic = INTRONIC_BASES/PF_BASES, Intergenic = INTERGENIC_BASES/PF_BASES, not_aligned = PF_NOT_ALIGNED_BASES/PF_BASES)]
 picard.metric.tbl <- melt(picard.metric.tbl, id.vars = "Sample")
 picard.metric.tbl <- picard.metric.tbl[, value := 100*value]
