@@ -44,7 +44,7 @@ set_flextable_defaults(font.family = "Arial", font.size = 12, padding.top = 3, p
 ```{r variables, results='asis', echo=FALSE}
 config_json <- as.data.table(fromJSON(txt = params$config))
 config_json[,condition := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$condition)]
-  config_json[,replicate       := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$replicate)]
+  config_json[,replicate := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$replicate)]
   config_json[,full_name := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$sample_name)]
 
 comparison <- unique(config_json$comparison)
@@ -77,7 +77,7 @@ star.palette <- c("#437bb1","#7cb5ec","#f7a35c","#e63491","#b1084c","#7f0000")
 - Core Facility Bioinformatics of CEITEC Masaryk University is gratefully acknowledged for the obtaining of the scientific data presented in this paper.
 
 # Description
-```{r, results='asis', echo=FALSE}
+```{r samples, results='asis', echo=FALSE}
 species <- config_json$species[1]
 reference <- config_json$reference[1]
 num_samples <- length(config_json[,full_name])
@@ -96,6 +96,8 @@ umi <- config_json$UMI[1]
 paired <- ifelse(config_json$is_paired[1] == TRUE, "paired-end", "single-end")
 
 tabl_sample <- fread(paste0(MQC_DATA,"multiqc_trimmomatic.txt"), header=T)
+tabl_sample[, Sample := gsub("_R.","",Sample)]
+if(is.null(tabl_sample$input_reads)==T){tabl_sample[,input_reads:=input_read_pairs]}
 tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
 setorder(tabl_sample, condition, Sample)
 
@@ -129,7 +131,7 @@ fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" =
 ```
 
 ## Analysis
-```{r, echo=FALSE}
+```{r rseqc, echo=FALSE}
 rseqc.infer.exp <- fread(paste0(MQC_DATA,"multiqc_rseqc_infer_experiment.txt"))
 rseqc.infer.exp <- rseqc.infer.exp[,Sample := gsub(".RSeQC.*","",Sample)]
 rseqc.infer.exp <- merge(config_json[, .(Sample = full_name, condition)], rseqc.infer.exp, by="Sample")
@@ -189,7 +191,7 @@ plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variab
 ### General samples QC
 - The sequencing depth varies from ~`r round(tabl_sample[input_reads == min(input_reads), input_reads]/1000000)`M of reads for sample `r tabl_sample[input_reads == min(input_reads), Sample]` to ~`r round(tabl_sample[input_reads == max(input_reads), input_reads]/1000000)`M of reads for sample `r tabl_sample[input_reads == max(input_reads), Sample]`.
 
-```{r, results='asis', echo=FALSE}
+```{r adaptors, results='asis', echo=FALSE}
 
 if(file.exists(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"))){
  adaptor_max <- fread(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"), header=T)
@@ -210,7 +212,7 @@ if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
 - Other initial quality checks look OK
 
 ### Alignment and splices
-```{r, results='asis', echo=FALSE}
+```{r star, results='asis', echo=FALSE}
 multiqc_star <- fread(paste0(MQC_DATA,"multiqc_star.txt"))
 multiqc_star <- merge(config_json[, .(Sample = full_name, condition)], multiqc_star, by="Sample")
 
@@ -261,9 +263,10 @@ plot.multiqc_star_perc
 ```
 
 ### rRNA contamination
-```{r , results='asis', echo=FALSE}
+```{r rrna, results='asis', echo=FALSE}
 fastq.screen.files <- fread(paste0(MQC_DATA,"multiqc_fastq_screen.txt"))
-fastq.screen.files <- merge(config_json[, .(Sample = full_name, condition)], fastq.screen.files[, Sample := gsub("_screen$","",Sample)], by="Sample")
+#fastq.screen.files <- merge(config_json[, .(Sample = full_name, condition)], fastq.screen.files[, Sample := gsub("_screen$","",Sample)], by="Sample")
+fastq.screen.files <- fastq.screen.files[, Sample := gsub("_screen$","",Sample)]
 
 rrna <- fastq.screen.files[, .(Sample, rRNA.perc=get("rRNA percentage"))]
 
@@ -290,7 +293,7 @@ rrna.p
 ```
 
 ### Mapped regions
-```{r, echo=FALSE}
+```{r metrics, echo=FALSE}
 picard.metric <- fread(paste0(MQC_DATA,"multiqc_picard_RnaSeqMetrics.txt"))
 picard.metric <- merge(config_json[, .(Sample = full_name, condition)], picard.metric, by="Sample")
 
@@ -418,7 +421,7 @@ plot.rseqc.infer.exp
 ```
 
 ### Read count assignment to genes
-```{r, echo=FALSE}
+```{r fc-rsem, echo=FALSE}
 if(var.rsem == 1){
 rsem.assign <- fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
 rsem.assign <- rsem.assign[, aligned.unique := 100*Unique/Total]
@@ -702,7 +705,7 @@ knitr::include_graphics(sample.sample.files$path[1])
 - An example of maximum top 20 most DE genes (by adj.p-value) can be found in Figure \@ref(fig:de-top-de).
   - The selection of a maximum 20 genes is always based on compared conditions but visualizes expression values from all other conditions if applicable.
 
-```{r, results="asis", echo=FALSE}
+```{r plot-capt, results="asis", echo=FALSE}
 capt <- paste0("Summary or number of DE genes based on default cut-off values from all three DE calculations. The first two columns are counts with both adj.p-value and logFC cut-off, the other two columns are only with adj.p-value cut-off. DESeq2 results, DESeq2 results without independent filtering (noIndFilt) and edgeR results are shown.")
 ```
 
@@ -789,6 +792,7 @@ knitr::include_graphics(ma.files[1])
 ```{r de-top-de, fig.cap = paste0("Heatmap of maximum top 20 differentially expressed genes (DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1)."), echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
 
 top_de.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
+
 if(length(top_de.files)>0){
   if(length(top_de.files)>1){
     for(i in 2:length(top_de.files)){
@@ -911,8 +915,8 @@ knitr::include_graphics(top_de.files[1])
 - Each set is then split into two:
   - str1 - signal coming from the alignment to the plus strand of DNA
   - str2 - signal coming from the alignment to the minus strand of DNA
-- If you have sense/forward specific library, the signal strand corresponds to the strand of the annotated gene (mapping ----> corresponds to the + strand annotation)
-- If you have antisense/reverse specific library, the signal strand corresponds to the opposite strand gene annotation (mapping <---- corresponds to the + strand annotation)
+- If you have sense/forward specific library, the signal strand corresponds to the strand of the annotated gene (mapping ----> corresponds to the [+] strand annotation)
+- If you have antisense/reverse specific library, the signal strand corresponds to the opposite strand gene annotation (mapping <---- corresponds to the [+] strand annotation)
 
 ### DE_analysis
 - All files related to Differentially expressed genes analysis
