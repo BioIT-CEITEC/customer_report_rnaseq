@@ -19,9 +19,7 @@
   },
   "general_params": [
     "entity_name",
-    "sample_name",
-    "condition",
-    "replicate"
+    "sample_name"
   ],
   "requested_params": [
     "is_paired",
@@ -33,7 +31,17 @@
     "UMI",
     "RNAseq_type",
     "type_of_extraction",
-    "strandness"
+    "strandness",
+    "condition",
+    "replicate",
+    "qc_samtools",
+    "qc_dupradar_RNA",
+    "qc_qualimap_RNA",
+    "qc_picard_RNA",
+    "qc_biotypes_RNA",
+    "qc_fastq_screen_RNA",
+    "qc_RSeQC_RNA",
+    "biobloom"
   ],
   "gui_params": {
     "primary": {
