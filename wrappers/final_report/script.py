@@ -10,6 +10,13 @@ f = open(log_filename, 'a+')
 f.write("\n##\n## RULE: final_report \n##\n")
 f.close()
 
+command = "sed -i 's/NaN/0/' "+ snakemake.params.mqc_json
+
+f = open(log_filename, 'a+')
+f.write("## Need to fix 'NaN' in JSON file \n")
+f.write("## COMMAND: "+command+"\n")
+shell(command)
+
 command = " cp '"+os.path.abspath(os.path.dirname(__file__))+"/customer_report.Rmd' customer_report/"
 
 shell(command)
