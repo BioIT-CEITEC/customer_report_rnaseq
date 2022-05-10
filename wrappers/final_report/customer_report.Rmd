@@ -170,13 +170,12 @@ plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variab
   ggtitle("RSeQC: Infer experiment")
 
 ```
-- Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**)  and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r reference`**).
+- Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**) and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r reference`**).
 - Mapped reads were counted and summarized to genes (**featureCounts**).
   - Only uniquely mapped and uniquely assigned reads were counted.
-  - The library preparation kit strand-specificity is: **`r tolower(strandness)`**, and only reads in this strand should be considered.
 `r if(var.rsem==1){"- Mapped reads were counted and summarized to genes (**RSEM**)."}`
 `r if(var.rsem==1){"  - Uniquely mapped as well as multimapped reads were counted."}`
-`r if(var.rsem==1){paste0("  - The library preparation kit strand-specificity is: **",tolower(strandness),"**, and only reads in this strand should be considered.")}`
+- The library preparation kit strand-specificity is: **`r tolower(strandness)`**, and only reads in this strand should be considered.
 - Following checks were performed to estimate the overall sample quality:
   - rRNA content estimate (**fastq_screen**).
   - Read duplication rate (**dupRadar, Picard tools**).
