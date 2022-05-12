@@ -196,11 +196,11 @@ if(file.exists(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"))){
  adaptor_max <- fread(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"), header=T)
  adaptor_max <- melt(adaptor_max, id.vars = c("Sample"), value.name = "plot.adaptor.max")
 }else{
- #adaptor_max <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = c('plots'), plot_opts = list(fastqc_adapter_content_plot= list(extractor = extract_ignore_x, summary = list(max = max), prefix = "adaptor"))) # tidymultiqc v0.1.0
- adaptor_plot <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'fastqc_adapter_content_plot')
- adaptor_max <- adaptor_plot %>% tidyr::unnest(cols = plot.fastqc_adapter_content_plot) %>%
-         dplyr::group_by(metadata.sample_id) %>%
-         dplyr::summarise(plot.adaptor.max = max(y))
+ adaptor_max <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = c('plots'), plot_opts = list(fastqc_adapter_content_plot= list(extractor = extract_ignore_x, summary = list(max = max), prefix = "adaptor"))) # tidymultiqc v0.1.0
+ #adaptor_plot <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'fastqc_adapter_content_plot')
+ #adaptor_max <- adaptor_plot %>% tidyr::unnest(cols = plot.fastqc_adapter_content_plot) %>%
+ #        dplyr::group_by(metadata.sample_id) %>%
+ #        dplyr::summarise(plot.adaptor.max = max(y))
 }
 
 if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
@@ -387,19 +387,19 @@ plot.rseqc.metric
 `r if(rna_type == "classic_rev"){"  - Coverage across the gene is very even and shows very good coverage across whole genes "}else if(rna_type == "quant_fwd"){"  - Coverage across the gene is very good and shows the characteristic accumulation in 3'end of the genes in all the samples, which is typical from the library preparation using QuantSeq "}``r paste0("(Figure \\@ref(fig:picard-cov)).")`
 
 ```{r picard-cov, results='asis', echo=FALSE, fig.cap="Gene body mapping distribution.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = default_height}
-# gene_cov <- load_multiqc(
-#   paste0(MQC_DATA,"multiqc_data.json"),
-#   sections = "plots",
-#   plot_opts = list(picard_rna_coverage = list(
-#     extractor = extract_xy,
-#     summary = list(
-#       df=list
-#     )
-#   ))
-# )
-gene_cov<-load_multiqc("multiqc_data.json", sections = 'plot', plots = 'picard_rna_coverage')
-#gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage.df))
-gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage))
+gene_cov <- load_multiqc(
+  paste0(MQC_DATA,"multiqc_data.json"),
+  sections = "plots",
+  plot_opts = list(picard_rna_coverage = list(
+    extractor = extract_xy,
+    summary = list(
+      df=list
+    )
+  ))
+)
+#gene_cov<-load_multiqc("multiqc_data.json", sections = 'plot', plots = 'picard_rna_coverage')
+gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage.df))
+#gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage))
 setnames(gene_cov, "metadata.sample_id","Sample")
 
 gene_cov <- merge(config_json[, .(Sample = full_name)], gene_cov, by="Sample")
