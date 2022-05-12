@@ -26,6 +26,8 @@
     "reference",
     "feature_count",
     "RSEM",
+    "salmon",
+    "kallisto",
     "UMI",
     "RNAseq_type",
     "type_of_extraction",
