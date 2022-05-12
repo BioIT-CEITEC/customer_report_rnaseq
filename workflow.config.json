@@ -32,8 +32,6 @@
     "RNAseq_type",
     "type_of_extraction",
     "strandness",
-    "condition",
-    "replicate",
     "qc_samtools",
     "qc_dupradar_RNA",
     "qc_qualimap_RNA",
