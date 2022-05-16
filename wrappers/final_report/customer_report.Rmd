@@ -171,7 +171,7 @@ plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variab
   theme(plot.title = element_text(face="bold")) +
   ggtitle("RSeQC: Infer experiment")
 
-plotly.rseqc.infer.exp <- ggplotly(plot.rseqc.infer.exp)
+plotly.rseqc.infer.exp <- ggplotly(plot.rseqc.infer.exp) %>% layout(legend = list(orientation = 'h', y=-0.3))
 
 ```
 - Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**) and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r reference`**).
@@ -256,7 +256,7 @@ plot.multiqc_star_perc <- ggplot(multiqc_star_perc, aes(Sample, value, fill = va
   theme(plot.title = element_text(face="bold")) +
   ggtitle("STAR: Alignment Scores")
 
-plotly.multiqc_star_perc <- ggplotly(plot.multiqc_star_perc) %>% layout(legend = list(orientation = 'h', y=-0.1))
+plotly.multiqc_star_perc <- ggplotly(plot.multiqc_star_perc) %>% layout(legend = list(orientation = 'h', y=-0.3))
 
 ```
 
@@ -288,6 +288,8 @@ rrna.p <- ggplot(rrna, aes(Sample, rRNA.perc)) +
   scale_x_discrete(limits=rev) +
   theme(plot.title = element_text(face="bold")) +
   ggtitle("rRNA Content")
+
+plotly.rrna.p <- ggplotly(rrna.p) %>% layout(legend = list(orientation = 'h', y=-0.3))
 
 rrna.max <- round(max(rrna[,rRNA.perc]))
 ```
@@ -356,6 +358,8 @@ plot.picard.metric <- ggplot(picard.metric.tbl, aes(Sample, value, fill = factor
   theme(plot.title = element_text(face="bold")) +
   ggtitle("Picard: RnaSeqMetrics Read Assignments")
 
+plotly.picard.metric <- ggplotly(plot.picard.metric) %>% layout(legend = list(orientation = 'h', y=-0.3))
+
 rseqc.metric.tbl <- melt(rseqc.metric.tbl, id.vars = "Sample")
 rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (Sample = gsub(".RSeQC.*","",Sample), variable = gsub("_tag_pct","",variable))]
 
@@ -373,6 +377,8 @@ plot.rseqc.metric <- ggplot(rseqc.metric.tbl, aes(Sample, value, fill = factor(v
   theme(plot.title = element_text(face="bold")) +
   ggtitle("RSeQC: Read Distribution")
 
+plotly.rseqc.metric <- ggplotly(plot.reseqc.metric) %>% layout(legend = list(orientation = 'h', y=-0.3))
+
 ```
 
 - Evaluation of the mapped genomic regions is very comparable
@@ -381,11 +387,11 @@ plot.rseqc.metric <- ggplot(rseqc.metric.tbl, aes(Sample, value, fill = factor(v
 - All samples are good quality and can be safely used for Differential expression analysis.
 
 ```{r picard-map-loc, results='asis', echo=FALSE, fig.cap="Mapped locations (Picard; in bases).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plot.picard.metric
+plotly.picard.metric
 ```
 
 ```{r rseqc-map-loc, results='asis', echo=FALSE, fig.cap="Mapped locations (RSeQC; in reads).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plot.rseqc.metric
+plotly.rseqc.metric
 ```
 
 ### Read coverage distribution
@@ -425,7 +431,9 @@ plot.gene.cov <- ggplot(gene_cov, aes(x, y, colour = factor(Sample))) +
   theme(plot.title = element_text(face="bold")) +
   ggtitle("Picard: Normalized Gene Coverage")
 
-plot.gene.cov
+plotly.gene.cov <- ggplotly(plot.gene.cov) %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+plotly.gene.cov
 
 ```
 
@@ -438,7 +446,7 @@ plot.gene.cov
   - We consider mapping as `r tolower(strandness.found)`, as we got the highest number of suitable reads for DE analysis.
 
 ```{r rseqc-exp, results='asis', echo=FALSE, fig.cap="Library strand specificity.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plot.rseqc.infer.exp
+plotly.rseqc.infer.exp
 ```
 
 ### Read count assignment to genes
@@ -466,6 +474,8 @@ plot.rsem.assign <- ggplot(rsem.assign.tabl, aes(Sample, value, fill = factor(va
   guides(fill=guide_legend(nrow=2, byrow=TRUE)) +
   theme(plot.title = element_text(face="bold")) +
   ggtitle("RSEM: Mapped reads")
+
+  plotly.rsem.assign <- ggplotly(plot.rsem.assign) %>% layout(legend = list(orientation = 'h', y=-0.3))
 
 rsem.assign.min <- round(min(rsem.assign[,Alignable]/1E6),0)
 rsem.assign.max <- round(max(rsem.assign[,Alignable]/1E6),0)
@@ -517,6 +527,8 @@ plot.fc.assign <- ggplot(fc.assign.tabl, aes(Sample, value, fill = variable)) +
   theme(plot.title = element_text(face="bold")) +
   ggtitle("featureCounts: Assignments")
 
+plotly.fc.assign <- ggplotly(plot.fc.assign) %>% layout(legend = list(orientation = 'h', y=-0.3))
+
 ```
 
 - Read count assignment from **featureCounts** for RNA-Seq is quite high (between `r fc.assign.min.perc`% and `r fc.assign.max.perc`%, calculated only from uniquely mapped reads)
@@ -532,7 +544,7 @@ fit_to_width(autofit(qflextable(fc.assign[,.(Sample, Assigned, "Assigned (%)"= r
 ```
 
 ```{r fc-assign, results='asis', echo=FALSE, fig.cap="Read count assignment to genes (featureCounts).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plot.fc.assign
+plotly.fc.assign
 ```
 
 
@@ -544,7 +556,7 @@ fit_to_width(autofit(qflextable(rsem.assign[,.(Sample, Alignable, "Alignable (%)
 
 ```{r rsem-assign, results='asis', echo=FALSE, fig.cap="Read count assignment to genes (RSEM).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
 if(var.rsem==1){
-  plot.rsem.assign
+  plotly.rsem.assign
 }
 ```
 
@@ -604,7 +616,9 @@ if(length(unique(pct$Sample)) == 1){
           theme(legend.key.size = unit(0.6,"line")) +
           guides(fill=guide_legend(nrow=2,byrow=TRUE))
   #ggsave(filename = paste0(outpdf), plot = mybar, device = pdf, width = 10, height = 6)
-  mybar
+  plotly.mybar <- ggplotly(mybar) %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  plotly.mybar
     }
 ```
 
