@@ -300,7 +300,7 @@ rrna.max <- round(max(rrna[,rRNA.perc]))
   - The percentages are summarized in Figure \@ref(fig:fastq-screen-rrna).
 
 ```{r fastq-screen-rrna, results='asis', echo=FALSE, fig.cap="rRNA estimate.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height2}
-rrna.p
+plotly.rrna.p
 ```
 
 ### Mapped regions
