@@ -36,6 +36,7 @@ library(ggplot2)
 library(TidyMultiqc)
 library(tidyr)
 library(officer)
+library(plotly)
 
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 set_flextable_defaults(font.family = "Arial", font.size = 12, padding.top = 3, padding.bottom = 3)
@@ -44,11 +45,12 @@ set_flextable_defaults(font.family = "Arial", font.size = 12, padding.top = 3, p
 ```{r variables, results='asis', echo=FALSE}
 config_json <- as.data.table(fromJSON(txt = params$config))
 config_json[,condition := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$condition)]
-  config_json[,replicate := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$replicate)]
-  config_json[,full_name := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$sample_name)]
+config_json[,replicate := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$replicate)]
+config_json[,full_name := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$sample_name)]
 
 comparison <- unique(config_json$comparison)
 biotype <- unique(config_json$biotype_list)
+analysis_type <- paste0("DE_",unlist(strsplit(unique(config_json$analysis_type),split="\\|")))
 
 if(config_json$RSEM[1] == TRUE){
   var.rsem <- 1
@@ -169,6 +171,8 @@ plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variab
   theme(plot.title = element_text(face="bold")) +
   ggtitle("RSeQC: Infer experiment")
 
+plotly.rseqc.infer.exp <- ggplotly(plot.rseqc.infer.exp)
+
 ```
 - Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**) and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r reference`**).
 - Mapped reads were counted and summarized to genes (**featureCounts**).
@@ -252,6 +256,8 @@ plot.multiqc_star_perc <- ggplot(multiqc_star_perc, aes(Sample, value, fill = va
   theme(plot.title = element_text(face="bold")) +
   ggtitle("STAR: Alignment Scores")
 
+plotly.multiqc_star_perc <- ggplotly(plot.multiqc_star_perc)
+
 ```
 
 - The single end reads were aligned to `r species` reference genome with the help of the gene annotation (`r reference`) using STAR aligner.
@@ -262,7 +268,7 @@ fit_to_width(autofit(qflextable(tabl_mapread[,.(Sample, condition, "uniquely map
 ```
 
 ```{r star-map, results='asis', echo=FALSE, fig.cap="Percentages and distribution of different mapping types. For more details please see the STAR aligner manual.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plot.multiqc_star_perc
+plotly.multiqc_star_perc
 ```
 
 ### rRNA contamination
@@ -397,7 +403,7 @@ plot.rseqc.metric
 #     )
 #   ))
 # )
-gene_cov<-load_multiqc("multiqc_data.json", sections = 'plot', plots = 'picard_rna_coverage')
+gene_cov<-load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'picard_rna_coverage')
 # gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage.df))
 gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage))
 setnames(gene_cov, "metadata.sample_id","Sample")

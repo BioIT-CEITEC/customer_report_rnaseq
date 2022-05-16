@@ -53,9 +53,9 @@ for condition1 in condition_list:
             if ':' not in condition2 and condition2 != condition1:
                 comparison_dir_list.append(condition2 + "_vs_" + condition1)
 
-config["analysis_type"] = analysis
-config["biotype_list"] = biotype_dir_list
-config["comparison"] = comparison_dir_list
+config["analysis_type"] = "|".join(analysis)
+config["biotype_list"] = "|".join(biotype_dir_list)
+config["comparison"] = "|".join(comparison_dir_list)
 
 if not config["is_paired"]:
     read_pair_tags = [""]
