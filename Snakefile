@@ -36,6 +36,10 @@ if config["feature_count"]:
     analysis.append("feature_count")
 if config["RSEM"]:
     analysis.append("RSEM")
+if config["salmon"]:
+    analysis.append("salmon")
+if config["kallisto"]:
+    analysis.append("kallisto")
 
 condition_list = sorted(sample_tab.condition.unique()) if config['conditions_to_compare'] == "all" else config['conditions_to_compare'].split(",")
 biotype_dir_list = config['biotypes'].split(",")
