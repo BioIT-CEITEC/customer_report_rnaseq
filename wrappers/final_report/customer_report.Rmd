@@ -377,7 +377,7 @@ plot.rseqc.metric <- ggplot(rseqc.metric.tbl, aes(Sample, value, fill = factor(v
   theme(plot.title = element_text(face="bold")) +
   ggtitle("RSeQC: Read Distribution")
 
-plotly.rseqc.metric <- ggplotly(plot.reseqc.metric) %>% layout(legend = list(orientation = 'h', y=-0.3))
+plotly.rseqc.metric <- ggplotly(plot.rseqc.metric) %>% layout(legend = list(orientation = 'h', y=-0.3))
 
 ```
 
