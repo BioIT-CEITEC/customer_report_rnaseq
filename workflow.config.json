@@ -52,6 +52,16 @@
         "label": "Author email",
         "type": "string",
         "default": "nicolas.blavet@ceitec.muni.cz"
+      },
+      "conditions_to_compare": {
+        "label": "Conditions to compare",
+        "type": "string",
+        "default": "all"
+      },
+      "biotypes": {
+        "label": "Biotypes",
+        "type": "string",
+        "default": "all"
       }
     },
     "detailed": {
