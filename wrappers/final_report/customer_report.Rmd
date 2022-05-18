@@ -47,8 +47,8 @@ config_json[,condition := sapply(1:length(config_json$samples),function(x) confi
   config_json[,replicate := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$replicate)]
   config_json[,full_name := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$sample_name)]
 
-comparison <- unique(config_json$comparison)
-biotype <- unique(config_json$biotype_list)
+comparison <- unlist(strsplit(unique(config_json$comparison),split="\\|"))
+biotype <- unlist(strsplit(unique(config_json$biotype_list),split="\\|"))
 
 if(config_json$RSEM[1] == TRUE){
   var.rsem <- 1
