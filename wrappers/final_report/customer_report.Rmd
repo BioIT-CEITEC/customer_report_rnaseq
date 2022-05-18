@@ -344,7 +344,7 @@ rrna.p <- ggplot(rrna, aes(Sample, rRNA.perc)) +
   theme(plot.title = element_text(face="bold")) +
   ggtitle("rRNA Content")
 
-plotly.rrna.p <- ggplotly(rrna.p) %>% layout(legend = list(orientation = 'h', y=-0.3))
+plotly.rrna.p <- ggplotly(rrna.p, tooltip = "rRNA.perc") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
 rrna.max <- round(max(rrna[,rRNA.perc]))
 ```
