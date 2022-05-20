@@ -64,6 +64,48 @@ else:
     read_pair_tags = ["_R1","_R2"]
     paired = "PE"
 
+# check what to report:
+if config["qc_samtools"] and config["qc_samtools_report"]:
+    config["display_qc_samtools"] = True
+else:
+    config["display_qc_samtools"] = False
+
+if config["qc_dupradar_RNA"] and config["qc_dupradar_RNA_report"]:
+    config["display_qc_dupradar_RNA"] = True
+else:
+    config["display_qc_dupradar_RNA"] = False
+
+if config["qc_qualimap_RNA"] and config["qc_qualimap_RNA_report"]:
+    config["display_qc_qualimap_RNA"] = True
+else:
+    config["display_qc_qualimap_RNA"] = False
+
+if config["qc_picard_RNA"] and config["qc_picard_RNA_report"]:
+    config["display_qc_picard_RNA"] = True
+else:
+    config["display_qc_picard_RNA"] = False
+
+if config["qc_RSeQC_RNA"] and config["qc_RSeQC_RNA_report"]:
+    config["display_qc_RSeQC_RNA"] = True
+else:
+    config["display_qc_RSeQC_RNA"] = False
+
+if config["qc_biotypes_RNA"] and config["qc_biotypes_RNA_report"]:
+    config["display_qc_biotypes_RNA"] = True
+else:
+    config["display_qc_biotypes_RNA"] = False
+
+if config["qc_fastq_screen_RNA"] and config["qc_fastq_screen_RNA_report"]:
+    config["display_qc_fastq_screen_RNA"] = True
+else:
+    config["display_qc_fastq_screen_RNA"] = False
+
+if config["biobloom"] and config["biobloom_report"]:
+    config["display_biobloom"] = True
+else:
+    config["display_biobloom"] = False
+
+
 os.makedirs("customer_report",exist_ok=True)
 
 f=open("customer_report/customer_report.json", "w")
