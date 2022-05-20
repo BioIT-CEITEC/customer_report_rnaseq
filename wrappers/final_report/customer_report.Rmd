@@ -134,47 +134,6 @@ fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" =
 ```
 
 ## Analysis
-```{r rseqc, echo=FALSE}
-rseqc.infer.exp <- fread(paste0(MQC_DATA,"multiqc_rseqc_infer_experiment.txt"))
-rseqc.infer.exp <- rseqc.infer.exp[,Sample := gsub(".RSeQC.*","",Sample)]
-rseqc.infer.exp <- merge(config_json[, .(Sample = full_name, condition)], rseqc.infer.exp, by="Sample")
-setorder(rseqc.infer.exp, condition, Sample)
-
-if(paired=="single-end"){
-  rseqc.sense <- round(mean(100*rseqc.infer.exp$se_sense),0)
-  rseqc.antisense <- round(mean(100*rseqc.infer.exp$se_antisense),0)
-  rseqc.failed <- round(mean(100*rseqc.infer.exp$failed),0)
-}else{
-  rseqc.sense <- round(mean(100*rseqc.infer.exp$pe_sense),0)
-  rseqc.antisense <- round(mean(100*rseqc.infer.exp$pe_antisense),0)
-  rseqc.failed <- round(mean(100*rseqc.infer.exp$failed),0)
-}
-
-rseqc.infer.exp <- melt(rseqc.infer.exp, id.vars = c("Sample","condition"))
-rseqc.infer.exp <- rseqc.infer.exp[, value := 100*value]
-pct_antisense <- rseqc.infer.exp[variable %like% "antisense", .(mean(value))]
-
-if(pct_antisense >= 70){strandness.found <- "Reverse"}
-if(pct_antisense < 30){strandness.found <- "Forward"}
-if(pct_antisense >= 30 & pct_antisense < 70){strandness.found <- "Unstranded"}
-
-plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variable)) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = rseqc.palette, labels = c("Sense", "Antisense", "Undetermined"), name = "") +
-  coord_flip() +
-  #scale_y_continuous(labels = scales::percent, name = "% Tags", breaks = c(0,0.2,0.4,0.6,0.8,1)) +
-  scale_y_continuous(name = "% Tags", breaks = seq(0,100,10)) +
-  xlab("") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("RSeQC: Infer experiment")
-
-plotly.rseqc.infer.exp <- ggplotly(plot.rseqc.infer.exp) %>% layout(legend = list(orientation = 'h', y=-0.3))
-
-```
 - Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**) and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r reference`**).
 - Mapped reads were counted and summarized to genes with:
 `r if(config_json$feature_count[1] == TRUE){"  - **featureCounts**."}`
@@ -598,9 +557,46 @@ plotly.gene.cov
 
 
 ### Strand specificity
+```{r rseqc-strand, echo=FALSE}
+rseqc.infer.exp <- fread(paste0(MQC_DATA,"multiqc_rseqc_infer_experiment.txt"))
+rseqc.infer.exp <- rseqc.infer.exp[,Sample := gsub(".RSeQC.*","",Sample)]
+rseqc.infer.exp <- merge(config_json[, .(Sample = full_name, condition)], rseqc.infer.exp, by="Sample")
+setorder(rseqc.infer.exp, condition, Sample)
+
+rseqc.infer.exp <- melt(rseqc.infer.exp, id.vars = c("Sample","condition"))
+rseqc.infer.exp <- rseqc.infer.exp[, value := 100*value]
+rseqc.infer.exp <- rseqc.infer.exp[variable %like% "e_sense", variable:="Sense"]
+rseqc.infer.exp <- rseqc.infer.exp[variable %like% "e_antisense", variable:="Antisense"]
+rseqc.infer.exp <- rseqc.infer.exp[variable == "failed", variable:="Undetermined"]
+rseqc.infer.exp <- rseqc.infer.exp[, variable := factor(variable, levels = c("Sense", "Antisense", "Undetermined"))]
+
+rseqc.strand.spec <- rseqc.infer.exp[, .(mean = round(mean(value),0)), by="variable"]
+
+if(rseqc.strand.spec[variable == "Antisense", mean] >= 70){strandness.found <- "Reverse"}
+if(rseqc.strand.spec[variable == "Antisense", mean] < 30){strandness.found <- "Forward"}
+if(rseqc.strand.spec[variable == "Antisense", mean] >= 30 & rseqc.strand.spec[variable == "Antisense", mean] < 70){strandness.found <- "Unstranded"}
+
+plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variable)) +
+  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+  scale_fill_manual(values = rseqc.palette, labels = c("Sense", "Antisense", "Undetermined"), name = "") +
+  coord_flip() +
+  #scale_y_continuous(labels = scales::percent, name = "% Tags", breaks = c(0,0.2,0.4,0.6,0.8,1)) +
+  scale_y_continuous(name = "% Tags", breaks = seq(0,100,10)) +
+  xlab("") +
+  scale_x_discrete(limits=rev) +
+  theme_bw() +
+  theme(legend.position="bottom") +
+  theme(legend.key.size = unit(0.6,"line")) +
+  theme(plot.title = element_text(face="bold")) +
+  ggtitle("RSeQC: Infer experiment")
+
+plotly.rseqc.infer.exp <- ggplotly(plot.rseqc.infer.exp, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+```
+
 - According to the preparation kit reads should be `r if(strandness == "Forward"){"in the forward strand."}else if(strandness == "Reverse"){"in the reverse strand."}else if(strandness == "Unstranded"){"unstranded."}`
 - The analysis shows the strand-specificity of each library, but cannot be trusted with full confidence.
-  - All the samples have ~`r rseqc.sense`% of the forward-strand specificity, ~`r rseqc.antisense`% of the reverse-strand specificity but ~`r rseqc.failed`% mappings cannot be determined.
+  - All the samples have ~`r rseqc.strand.spec[variable == "Sense", mean]`% of the forward-strand specificity, ~`r rseqc.strand.spec[variable == "Antisense", mean]`% of the reverse-strand specificity but ~`r rseqc.strand.spec[variable == "Undetermined", mean]`% mappings cannot be determined.
     - The latest are usually mappings to intergenic regions, unannotated regions or regions where two genes overlap at the same strand (`r paste0("Figure \\@ref(fig:rseqc-exp)")`).
   - We consider mapping as `r tolower(strandness.found)`, as we got the highest number of suitable reads for DE analysis.
 
