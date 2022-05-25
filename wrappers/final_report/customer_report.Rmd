@@ -397,7 +397,7 @@ plot.rseqc.metric
 #     )
 #   ))
 # )
-gene_cov<-load_multiqc("multiqc_data.json", sections = 'plot', plots = 'picard_rna_coverage')
+gene_cov<-load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'picard_rna_coverage')
 #gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage.df))
 gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage))
 setnames(gene_cov, "metadata.sample_id","Sample")
