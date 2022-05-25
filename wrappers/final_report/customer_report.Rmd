@@ -185,43 +185,43 @@ if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
 multiqc_star <- fread(paste0(MQC_DATA,"multiqc_star.txt"))
 multiqc_star <- merge(config_json[, .(Sample = full_name, condition)], multiqc_star, by="Sample")
 
-tabl_mapread <- multiqc_star[, .(Sample, condition, uniquely_mapped, uniquely_mapped_percent, multimapped, multimapped_percent)]
+ multiqc_star_tabl <- multiqc_star[, .(Sample, condition,
+                                      total_reads = as.integer(total_reads),
+                                      uniquely_mapped = as.integer(uniquely_mapped),
+                                      multimapped = as.integer(multimapped),
+                                      multimapped_toomany = as.integer(multimapped_toomany),
+                                      unmapped_mismatches = as.integer(unmapped_mismatches),
+                                      unmapped_tooshort = as.integer(unmapped_tooshort),
+                                      unmapped_other = as.integer(unmapped_other))]
+multiqc_star_tabl <- melt(multiqc_star_tabl, id.vars = c("Sample","condition","total_reads"))
+multiqc_star_tabl <- multiqc_star_tabl[, percentage:=round(100*value/total_reads, 2), by="Sample"]
+multiqc_star_tabl <- multiqc_star_tabl[, variable := factor(variable, levels = c("uniquely_mapped","multimapped",
+                                                                                 "multimapped_toomany","unmapped_mismatches",
+                                                                                 "unmapped_tooshort","unmapped_other"))]
+
+tabl_mapread <- multiqc_star[, .(Sample, condition,
+                                      uniquely_mapped, uniquely_mapped_percent,
+                                      multimapped, multimapped_percent)]
 setorder(tabl_mapread, condition, Sample)
 
 uni.map.mean.perc <- round(mean(tabl_mapread[,uniquely_mapped_percent]), 0)
 uni.map.min <- round(min(tabl_mapread[,uniquely_mapped]/1E6))
 uni.map.max <- round(max(tabl_mapread[,uniquely_mapped]/1E6))
 
+star.labcol <- multiqc_star_tabl[, .(variable = unique(variable) , Colour = star.palette, Label = c("Uniquely mapped", "Mapped to multiple loci",
+                                                                                                    "Mapped to too many loci","Unmapped: too many missmatches",
+                                                                                                    "Unmapped: too short","Unmapped: other"))]
 
-col.count <- names(multiqc_star) %!like% "percent" &
-  names(multiqc_star) %!like% "_rate" &
-  names(multiqc_star) %!like% "_length" &
-  names(multiqc_star) %!like% "_splices" &
-  names(multiqc_star) %!like% "condition" &
-  names(multiqc_star) %!like% "total_"
-
-multiqc_star_count <- multiqc_star[, ..col.count]
-multiqc_star_count <- melt(multiqc_star_count, id.vars = "Sample")
-multiqc_star_count <- multiqc_star_count[, variable := factor(variable, levels = c("uniquely_mapped","multimapped","multimapped_toomany","unmapped_mismatches","unmapped_tooshort","unmapped_other"))]
-
-col.perc <- names(multiqc_star) %like% "percent"
-multiqc_star_perc <- cbind(multiqc_star[,1], multiqc_star[, ..col.perc])
-multiqc_star_perc <- melt(multiqc_star_perc, id.vars = "Sample")
-multiqc_star_perc <- multiqc_star_perc[, variable := gsub("_percent","",variable)]
-multiqc_star_perc <- multiqc_star_perc[, variable := factor(variable, levels = c("uniquely_mapped","multimapped","multimapped_toomany","unmapped_mismatches","unmapped_tooshort","unmapped_other"))]
-
-star.labcol <- multiqc_star_perc[, .(variable = unique(variable) , Colour = star.palette, Label = c("Uniquely mapped", "Mapped to multiple loci", "Mapped to too many loci","Unmapped: too many missmatches","Unmapped: too short","Unmapped: other"))]
-
-star.perc.not0 <- multiqc_star_perc[, .(sum = sum(value)), by = variable][sum > 0,]$variable
-multiqc_star_perc <- multiqc_star_perc[variable %in% star.perc.not0,]
+# check and remove variable that have 0%
+star.perc.not0 <- multiqc_star_tabl[, .(sum = sum(percentage)), by = variable][sum > 0,]$variable
+multiqc_star_perc <- multiqc_star_tabl[variable %in% star.perc.not0,]
 star.labcol.perc <- star.labcol[variable %in% star.perc.not0,]
-
-star.count.not0 <- multiqc_star_count[, .(sum = sum(value)), by = variable][sum > 0,]$variable
-multiqc_star_count <- multiqc_star_count[variable %in% star.count.not0,]
+# check and remove variable that have 0 counts
+star.count.not0 <- multiqc_star_tabl[, .(sum = sum(value)), by = variable][sum > 0,]$variable
+multiqc_star_count <- multiqc_star_tabl[variable %in% star.count.not0,]
 star.labcol.count <- star.labcol[variable %in% star.count.not0,]
 
-
-plot.multiqc_star_perc <- ggplot(multiqc_star_perc, aes(Sample, value, fill = variable)) +
+plot.multiqc_star_perc <- ggplot(multiqc_star_perc, aes(Sample, percentage, fill = variable)) +
   geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = star.labcol.perc$Colour, labels = star.labcol.perc$Label, name = "") +
   coord_flip() +
@@ -235,14 +235,18 @@ plot.multiqc_star_perc <- ggplot(multiqc_star_perc, aes(Sample, value, fill = va
   theme(plot.title = element_text(face="bold")) +
   ggtitle("STAR: Alignment Scores")
 
-plotly.multiqc_star_perc <- ggplotly(plot.multiqc_star_perc) %>% layout(legend = list(orientation = 'h', y=-0.3))
+plotly.multiqc_star_perc <- ggplotly(plot.multiqc_star_perc, tooltip="percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+for(i in 1:length(star.labcol.perc$variable)){
+  plotly.multiqc_star_perc$x$data[[i]]$name <- star.labcol.perc$Label[i]
+}
 
 plot.multiqc_star_count <- ggplot(multiqc_star_count, aes(Sample, value, fill = variable)) +
   geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
   scale_fill_manual(values = star.labcol.count$Colour, labels = star.labcol.count$Label, name = "") +
   coord_flip() +
   xlab("") +
-  ylab("# Reads") +
+  ylab("Number of Reads") +
   scale_x_discrete(limits=rev) +
   theme_bw() +
   theme(legend.position="bottom") +
@@ -251,7 +255,11 @@ plot.multiqc_star_count <- ggplot(multiqc_star_count, aes(Sample, value, fill = 
   theme(plot.title = element_text(face="bold")) +
   ggtitle("STAR: Alignment Scores")
 
-plotly.multiqc_star_count <- ggplotly(plot.multiqc_star_count) %>% layout(legend = list(orientation = 'h', y=-0.3))
+plotly.multiqc_star_count <- ggplotly(plot.multiqc_star_count, tooltip="value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+for(i in 1:length(star.labcol.count$variable)){
+  plotly.multiqc_star_count$x$data[[i]]$name <- star.labcol.count$Label[i]
+}
 
 ```
 
@@ -295,7 +303,7 @@ rrna.p <- ggplot(rrna, aes(Sample, rRNA.perc)) +
   theme(plot.title = element_text(face="bold")) +
   ggtitle("rRNA Content")
 
-plotly.rrna.p <- ggplotly(rrna.p) %>% layout(legend = list(orientation = 'h', y=-0.3))
+plotly.rrna.p <- ggplotly(rrna.p, tooltip = "rRNA.perc") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
 rrna.max <- round(max(rrna[,rRNA.perc]))
 ```
