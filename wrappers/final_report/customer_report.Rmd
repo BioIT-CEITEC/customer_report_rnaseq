@@ -48,8 +48,8 @@ config_json[,condition := sapply(1:length(config_json$samples),function(x) confi
 config_json[,replicate := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$replicate)]
 config_json[,full_name := sapply(1:length(config_json$samples),function(x) config_json$samples[[x]]$sample_name)]
 
-comparison <- unique(config_json$comparison)
-biotype <- unique(config_json$biotype_list)
+comparison <- unlist(strsplit(unique(config_json$comparison),split="\\|"))
+biotype <- unlist(strsplit(unique(config_json$biotype_list),split="\\|"))
 analysis_type <- paste0("DE_",unlist(strsplit(unique(config_json$analysis_type),split="\\|")))
 
 if(config_json$RSEM[1] == TRUE){
@@ -115,7 +115,7 @@ custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 40, 15, custom_
 - The main goal of the experiment is to perform Differential Expression analysis.
 - In general, we have `r num_samples` `r species` samples. We have `r num_conditions` conditions, those conditions are sequenced in `r num_replicat` replicates, which is sufficient to obtain statistical significance.
 - Conditions to compare are:
-`r border_remove(theme_booktabs(delete_part(qflextable(data = as.data.frame(unique(config_json$comparison))),part = "header")))`
+`r border_remove(theme_booktabs(delete_part(qflextable(data = as.data.frame(unique(comparison))),part = "header")))`
 
 `r if(rna_type == "classic_rev"){paste0("- Samples were sequenced using ",paired," 75 bp reads; NEBNext Ultra II Directional RNA Library Prep Kit for Illumina + polyA selection.")}`
 `r if(rna_type == "quant_fwd"){"- Samples were sequenced using Lexogen Quantseq FWD kit, therefore a lot of reads in UTR regions are expected as well as huge 3’ sequencing bias. These data can only be used for differential expression analysis."}`
