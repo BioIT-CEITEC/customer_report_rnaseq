@@ -697,8 +697,6 @@ knitr::include_graphics(sample.sample.files$path[1])
 ## Differential expression results
 
 - Please note that for visualization purposes we had to set a predefined cut-off value for some of the parameters (adj.p-value and logFC)
-  - **Please read the disclaimer at the beginning of the report for more information about selected cut-off values!**
-
 - In this section, we might provide several results as the number of compared conditions is variable between experiments
 - Differential gene expression was calculated by two separate tools - edgeR and DESeq2
   - Both of the tools have different performances: edgeR is usually more sensitive and less specific, DESeq2 is usually more specific and less sensitive; edgeR is more suitable for fewer replicates (<12) as it is not as conservative as DESeq2
