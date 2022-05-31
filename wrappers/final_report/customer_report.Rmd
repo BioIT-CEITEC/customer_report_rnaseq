@@ -858,10 +858,10 @@ knitr::include_graphics(heatmap.sample.files$path[1])
 
 if(config_json$conditions_to_compare[1] == "all"){
   sample.sample.files <- data.table(comp = comparison[1])
-  sample.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch.svg")), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch.svg"), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA.svg"))]
+  sample.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch2.svg")), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch2.svg"), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA2.svg"))]
 }else{
   sample.sample.files <- data.table(comp = comparison)
-  sample.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch.svg")), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch.svg"), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA.svg"))]
+  sample.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch2.svg")), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch2.svg"), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA2.svg"))]
 }
 
 #sample.sample.files = list.files(paste0(mRNA_DE_FOLDER_PATH,comparison$cp,"/all/"), pattern = "sample_to_sample_PCA.png", full.names = T)
