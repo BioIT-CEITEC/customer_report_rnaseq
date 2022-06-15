@@ -65,42 +65,42 @@ else:
     paired = "PE"
 
 # check what to report:
-if config["qc_samtools"] and config["qc_samtools_report"]:
-    config["display_qc_samtools"] = True
+if config["qc_samtools"] and config["display_samtools"]:
+    config["display_samtools"] = True
 else:
-    config["display_qc_samtools"] = False
+    config["display_samtools"] = False
 
-if config["qc_dupradar_RNA"] and config["qc_dupradar_RNA_report"]:
-    config["display_qc_dupradar_RNA"] = True
+if config["qc_dupradar_RNA"] and config["display_dupradar_RNA"]:
+    config["display_dupradar_RNA"] = True
 else:
-    config["display_qc_dupradar_RNA"] = False
+    config["display_dupradar_RNA"] = False
 
-if config["qc_qualimap_RNA"] and config["qc_qualimap_RNA_report"]:
-    config["display_qc_qualimap_RNA"] = True
+if config["qc_qualimap_RNA"] and config["display_qualimap_RNA"]:
+    config["display_qualimap_RNA"] = True
 else:
-    config["display_qc_qualimap_RNA"] = False
+    config["display_qualimap_RNA"] = False
 
-if config["qc_picard_RNA"] and config["qc_picard_RNA_report"]:
-    config["display_qc_picard_RNA"] = True
+if config["qc_picard_RNA"] and config["display_picard_RNA"]:
+    config["display_picard_RNA"] = True
 else:
-    config["display_qc_picard_RNA"] = False
+    config["display_picard_RNA"] = False
 
-if config["qc_RSeQC_RNA"] and config["qc_RSeQC_RNA_report"]:
-    config["display_qc_RSeQC_RNA"] = True
+if config["qc_RSeQC_RNA"] and config["display_RSeQC_RNA"]:
+    config["display_RSeQC_RNA"] = True
 else:
-    config["display_qc_RSeQC_RNA"] = False
+    config["display_RSeQC_RNA"] = False
 
-if config["qc_biotypes_RNA"] and config["qc_biotypes_RNA_report"]:
-    config["display_qc_biotypes_RNA"] = True
+if config["qc_biotypes_RNA"] and config["display_biotypes_RNA"]:
+    config["display_biotypes_RNA"] = True
 else:
-    config["display_qc_biotypes_RNA"] = False
+    config["display_biotypes_RNA"] = False
 
-if config["qc_fastq_screen_RNA"] and config["qc_fastq_screen_RNA_report"]:
-    config["display_qc_fastq_screen_RNA"] = True
+if config["qc_fastq_screen_RNA"] and config["display_fastq_screen_RNA"]:
+    config["display_fastq_screen_RNA"] = True
 else:
-    config["display_qc_fastq_screen_RNA"] = False
+    config["display_fastq_screen_RNA"] = False
 
-if config["biobloom"] and config["biobloom_report"]:
+if config["biobloom"] and config["display_biobloom"]:
     config["display_biobloom"] = True
 else:
     config["display_biobloom"] = False

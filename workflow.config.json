@@ -65,42 +65,42 @@
       }
     },
     "detailed": {
-      "qc_samtools_report": {
+      "display_samtools": {
         "label": "Report QC samtools",
         "type": "bool",
         "default": true
       },
-      "qc_dupradar_RNA_report": {
+      "display_dupradar_RNA": {
         "label": "Report QC dupradar RNA",
         "type": "bool",
         "default": true
       },
-      "qc_qualimap_RNA_report": {
+      "display_qualimap_RNA": {
         "label": "Report QC qualimap RNA",
         "type": "bool",
         "default": true
       },
-      "qc_picard_RNA_report": {
+      "display_picard_RNA": {
         "label": "Report QC picard RNA",
         "type": "bool",
         "default": true
       },
-      "qc_biotypes_RNA_report": {
+      "display_biotypes_RNA": {
         "label": "Report QC biotypes RNA",
         "type": "bool",
         "default": true
       },
-      "qc_fastq_screen_RNA_report": {
+      "display_fastq_screen_RNA": {
         "label": "Report QC fastq screen RNA",
         "type": "bool",
         "default": true
       },
-      "qc_RSeQC_RNA_report": {
+      "display_RSeQC_RNA": {
         "label": "Report QC RSeQC RNA",
         "type": "bool",
         "default": true
       },
-      "biobloom_report": {
+      "display_biobloom": {
         "label": "Report Biobloom tools",
         "type": "bool",
         "default": false
