@@ -185,7 +185,7 @@ if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
 multiqc_star <- fread(paste0(MQC_DATA,"multiqc_star.txt"))
 multiqc_star <- merge(config_json[, .(Sample = full_name, condition)], multiqc_star, by="Sample")
 
- multiqc_star_tabl <- multiqc_star[, .(Sample, condition,
+multiqc_star_tabl <- multiqc_star[, .(Sample, condition,
                                       total_reads = as.integer(total_reads),
                                       uniquely_mapped = as.integer(uniquely_mapped),
                                       multimapped = as.integer(multimapped),
@@ -613,116 +613,342 @@ plotly.rseqc.infer.exp
 ```
 
 ### Read count assignment to genes
-```{r fc-rsem, echo=FALSE}
-if(var.rsem == 1){
-rsem.assign <- fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
-rsem.assign <- rsem.assign[, aligned.unique := 100*Unique/Total]
-rsem.assign <- rsem.assign[, aligned.multi := 100*Multi/Total]
-rsem.assign <- rsem.assign[, filter := 100*Filtered/Total]
-rsem.assign <- rsem.assign[, unaligned := 100*Unalignable/Total]
+```{r map-assign, echo=FALSE}
+if(config_json$RSEM[1] == TRUE){
+  rsem.assign <- fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
+  rsem.assign <- melt(rsem.assign[,.(Sample,Total,Unique,Multi,Filtered,Unalignable)], id.vars = c("Sample","Total"))
+  rsem.assign <- rsem.assign[,percentage := round(100*value/Total, 2), by = "Sample"]
 
-rsem.assign.tabl <- rsem.assign[, .(Sample, aligned.unique, aligned.multi, filter,unaligned)]
-rsem.assign.tabl <- melt(rsem.assign.tabl, id.vars = "Sample")
+  rsem.assign <- rsem.assign[, label := variable]
+  levels(rsem.assign$label) <- c("Aligned uniquely to a gene","Aligned to multiple genes","Filtered due to too many alignments","Unalignable reads")
 
-plot.rsem.assign <- ggplot(rsem.assign.tabl, aes(Sample, value, fill = factor(variable, levels = c("aligned.unique","aligned.multi","filter","unaligned")))) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = star.palette[c(1,4,5,6)], name = "", labels = c("Aligned uniquely to a gene","Aligned to multiple genes","Filtered due to too many alignments","Unalignable reads")) +
-  coord_flip() +
-  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
-  xlab("") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  guides(fill=guide_legend(nrow=2, byrow=TRUE)) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("RSEM: Mapped reads")
+  plot.rsem.assign.count <- ggplot(rsem.assign, aes(Sample, value, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = star.palette[c(1,4,5,6)], name = "") +
+    coord_flip() +
+    ylab("# Reads") +
+    xlab("") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=2, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("RSEM: Mapped reads")
 
-  plotly.rsem.assign <- ggplotly(plot.rsem.assign) %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.rsem.assign.count <- ggplotly(plot.rsem.assign.count, tooltip="value") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
-rsem.assign.min <- round(min(rsem.assign[,Alignable]/1E6),0)
-rsem.assign.max <- round(max(rsem.assign[,Alignable]/1E6),0)
-rsem.assign.min.perc <- round(min(rsem.assign[,alignable_percent]),0)
-rsem.assign.max.perc <- round(max(rsem.assign[,alignable_percent]),0)
+  plot.rsem.assign.pct <- ggplot(rsem.assign, aes(Sample, percentage, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = star.palette[c(1,4,5,6)], name = "") +
+    coord_flip() +
+    scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+    xlab("") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=2, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("RSEM: Mapped reads")
+
+  plotly.rsem.assign.pct <- ggplotly(plot.rsem.assign.pct, tooltip="percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  rsem.assign.min <- round(min(rsem.assign[variable == "Unique", value]/1E6),0)
+  rsem.assign.max <- round(max(rsem.assign[variable == "Unique", value]/1E6),0)
+  rsem.assign.min.perc <- round(min(rsem.assign[variable == "Unique", percentage]),0)
+  rsem.assign.max.perc <- round(max(rsem.assign[variable == "Unique", percentage]),0)
+
+  rsem.alignable<-rsem.assign[variable=="Unique" | variable=="Multi", .(variable = "Alignable", value = sum(value), percentage = round(100*sum(value)/Total, 2)), by = .(Sample, Total)]
 }
 
-fc.assign <- fread(paste0(MQC_DATA,"multiqc_featureCounts.txt"))
-fc.assign <- merge(config_json[, .(Sample = full_name, condition)], fc.assign, by="Sample")
-setorder(fc.assign, condition, Sample)
-fc.assign.min <- round(min(fc.assign[,Assigned]/1E6),0)
-fc.assign.max <- round(max(fc.assign[,Assigned]/1E6),0)
-fc.assign.min.perc <- round(min(fc.assign[,percent_assigned]),0)
-fc.assign.max.perc <- round(max(fc.assign[,percent_assigned]),0)
-fc.assign <- fc.assign[, `:=` (Assigned_pct = 100*Assigned/Total,
-                               Unassigned_Unmapped_pct = 100*Unassigned_Unmapped/Total,
-                               Unassigned_MappingQuality_pct = 100*Unassigned_MappingQuality/Total,
-                               Unassigned_Chimera_pct = 100*Unassigned_Chimera/Total,
-                               Unassigned_FragmentLength_pct = 100*Unassigned_FragmentLength/Total,
-                               Unassigned_Duplicate_pct = 100*Unassigned_Duplicate/Total,
-                               Unassigned_MultiMapping_pct = 100*Unassigned_MultiMapping/Total,
-                               Unassigned_Secondary_pct = 100*Unassigned_Secondary/Total,
-                               Unassigned_NonSplit_pct = 100*Unassigned_NonSplit/Total,
-                               Unassigned_NoFeatures_pct = 100*Unassigned_NoFeatures/Total,
-                               Unassigned_Overlapping_Length_pct = 100*Unassigned_Overlapping_Length/Total,
-                               Unassigned_Ambiguity_pct = 100*Unassigned_Ambiguity/Total
-                               )]
+if(config_json$feature_count[1] == TRUE){
+  fc.assign <- fread(paste0(MQC_DATA,"multiqc_featureCounts.txt"))
+  fc.assign <- merge(config_json[, .(Sample = full_name, condition)], fc.assign, by="Sample")
+  setorder(fc.assign, condition, Sample)
 
-fc.name.pct <- names(fc.assign)[names(fc.assign) %like% "_pct"]
-fc.assign.tabl <- cbind(fc.assign[,1], fc.assign[, ..fc.name.pct])
-fc.assign.tabl <- melt(fc.assign.tabl, id.vars = c("Sample"))
-fc.assign.tabl <- fc.assign.tabl[, variable := gsub("_pct", "", variable)]
-fc.assign.tabl <- fc.assign.tabl[, variable := factor(variable, levels = c("Assigned","Unassigned_Unmapped","Unassigned_MappingQuality","Unassigned_Chimera","Unassigned_FragmentLength","Unassigned_Duplicate","Unassigned_MultiMapping","Unassigned_Secondary","Unassigned_NonSplit","Unassigned_NoFeatures","Unassigned_Overlapping_Length","Unassigned_Ambiguity"))]
+  fc.assign <- melt(fc.assign[, percent_assigned:=NULL], id.vars = c("Sample","condition","Total"))
+  fc.assign <- fc.assign[, percentage := round(100*value/Total, 2), by = "Sample"]
 
-fc.name.not0 <- fc.assign.tabl[, .(sum = sum(value)), by = variable][sum > 0,]$variable
-fc.assign.tabl <- fc.assign.tabl[variable %in% fc.name.not0,]
+  fc.assign.min <- round(min(fc.assign[variable=="Assigned",value]/1E6),0)
+  fc.assign.max <- round(max(fc.assign[variable=="Assigned",value]/1E6),0)
+  fc.assign.min.perc <- round(min(fc.assign[variable=="Assigned",percentage]),0)
+  fc.assign.max.perc <- round(max(fc.assign[variable=="Assigned",percentage]),0)
 
-plot.fc.assign <- ggplot(fc.assign.tabl, aes(Sample, value, fill = variable)) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = rseqc.palette, name = "") +
-  coord_flip() +
-  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
-  xlab("") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("featureCounts: Assignments")
+  fc.assign <- fc.assign[, label := variable]
+  levels(fc.assign$label) <- gsub("Unassigned_","Unassigned: ",levels(fc.assign$variable))
+  levels(fc.assign$label) <- gsub("([a-z])([A-Z])","\\1 \\2",levels(fc.assign$label))
+  levels(fc.assign$label) <- gsub("_"," ",levels(fc.assign$label))
 
-plotly.fc.assign <- ggplotly(plot.fc.assign) %>% layout(legend = list(orientation = 'h', y=-0.3))
+  fc.name.not0 <- fc.assign[, .(sum = sum(value)), by = variable][sum > 0,]$variable
+  fc.assign <- fc.assign[variable %in% fc.name.not0,]
+
+  plot.fc.assign.count <- ggplot(fc.assign, aes(Sample, value, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = biobloom.palette, name = "") +
+    coord_flip() +
+    xlab("") +
+    ylab("# Reads") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("featureCounts: Assignments")
+
+  plotly.fc.assign.count <- ggplotly(plot.fc.assign.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  plot.fc.assign.pct <- ggplot(fc.assign, aes(Sample, percentage, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = biobloom.palette, name = "") +
+    coord_flip() +
+    xlab("") +
+    scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("featureCounts: Assignments")
+
+  plotly.fc.assign.pct <- ggplotly(plot.fc.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  fc.reassign <- fc.assign[variable=="Assigned" | variable=="Unassigned_Unmapped",.(Sample,label,value)][unique(multiqc_star_tabl[,.(Sample,total_reads)]), on = .(Sample=Sample)]
+  fc.reassign <- rbind(fc.reassign,fc.reassign[, .(label="No Features",value=total_reads-sum(value)), by=.(Sample,total_reads)])
+  fc.reassign[,percentage:=round(100*value/total_reads,2)]
+
+  plot.fc.reassign.pct <- ggplot(fc.reassign, aes(Sample, percentage, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = biobloom.palette, name = "") +
+    coord_flip() +
+    xlab("") +
+    scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("featureCounts: Assignments (counted over reads)")
+
+  plotly.fc.reassign.pct <- ggplotly(plot.fc.reassign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+}
+
+if(config_json$salmon_bam[1] == TRUE){
+  salmonB.assign <- fread(paste0(MQC_DATA,"multiqc_salmon.txt"))
+  salmonB.assign <- merge(config_json[, .(Sample = full_name, condition)], salmonB.assign, by="Sample")
+  setorder(salmonB.assign, condition, Sample)
+
+  salmonB.assign <- melt(salmonB.assign[, percent_aligned:=NULL], id.vars = c("Sample","condition","total_reads"))
+  salmonB.assign <- salmonB.assign[, percentage := round(100*value/total_reads, 2), by = "Sample"]
+  salmonB.assign <- salmonB.assign[, label:=variable]
+  levels(salmonB.assign$label) <- c("Pseudoaligned","Not aligned")
+
+  plot.salmonB.assign.count <- ggplot(salmonB.assign, aes(Sample, value, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = star.palette[c(1,5)], name = "") +
+    coord_flip() +
+    xlab("") +
+    ylab("# Reads") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Kallisto: Alignment Scores")
+
+  plotly.salmonB.assign.count <- ggplotly(plot.salmonB.assign.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  plot.salmonB.assign.pct <- ggplot(salmonB.assign, aes(Sample, percentage, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = star.palette[c(1,5)], name = "") +
+    coord_flip() +
+    xlab("") +
+    scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Kallisto: Alignment Scores")
+
+  plotly.salmonB.assign.pct <- ggplotly(plot.salmonB.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+}
+
+if(config_json$salmon_fastq[1] == TRUE){
+  salmonF.assign <- fread(paste0(MQC_DATA,"multiqc_salmon.txt"))
+  salmonF.assign <- merge(config_json[, .(Sample = full_name, condition)], salmonF.assign, by="Sample")
+  setorder(salmonF.assign, condition, Sample)
+
+  salmonF.assign <- melt(salmonF.assign[, percent_aligned:=NULL], id.vars = c("Sample","condition","total_reads"))
+  salmonF.assign <- salmonF.assign[, percentage := round(100*value/total_reads, 2), by = "Sample"]
+  salmonF.assign <- salmonF.assign[, label:=variable]
+  levels(salmonF.assign$label) <- c("Pseudoaligned","Not aligned")
+
+  plot.salmonF.assign.count <- ggplot(salmonF.assign, aes(Sample, value, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = star.palette[c(1,5)], name = "") +
+    coord_flip() +
+    xlab("") +
+    ylab("# Reads") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Kallisto: Alignment Scores")
+
+  plotly.salmonF.assign.count <- ggplotly(plot.salmonF.assign.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  plot.salmonF.assign.pct <- ggplot(salmonF.assign, aes(Sample, percentage, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = star.palette[c(1,5)], name = "") +
+    coord_flip() +
+    xlab("") +
+    scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Kallisto: Alignment Scores")
+
+  plotly.salmonF.assign.pct <- ggplotly(plot.salmonF.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+}
+
+if(config_json$kallisto[1] == TRUE){
+  kallisto.assign <- fread(paste0(MQC_DATA,"multiqc_kallisto.txt"))
+  kallisto.assign <- merge(config_json[, .(Sample = full_name, condition)], kallisto.assign, by="Sample")
+  setorder(kallisto.assign, condition, Sample)
+
+  kallisto.assign <- melt(kallisto.assign[, percent_aligned:=NULL], id.vars = c("Sample","condition","total_reads"))
+  kallisto.assign <- kallisto.assign[, percentage := round(100*value/total_reads, 2), by = "Sample"]
+  kallisto.assign <- kallisto.assign[, label:=variable]
+  levels(kallisto.assign$label) <- c("Pseudoaligned","Not aligned")
+
+  plot.kallisto.assign.count <- ggplot(kallisto.assign, aes(Sample, value, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = star.palette[c(1,5)], name = "") +
+    coord_flip() +
+    xlab("") +
+    ylab("# Reads") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Kallisto: Alignment Scores")
+
+  plotly.kallisto.assign.count <- ggplotly(plot.kallisto.assign.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  plot.kallisto.assign.pct <- ggplot(kallisto.assign, aes(Sample, percentage, fill = label)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = star.palette[c(1,5)], name = "") +
+    coord_flip() +
+    xlab("") +
+    scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Kallisto: Alignment Scores")
+
+  plotly.kallisto.assign.pct <- ggplotly(plot.kallisto.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+}
 
 ```
 
-- Read count assignment from **featureCounts** for RNA-Seq is quite high (between `r fc.assign.min.perc`% and `r fc.assign.max.perc`%, calculated only from uniquely mapped reads)
-  - Number of assigned reads is above limits of the recommended number of reads (~`r fc.assign.min`-`r fc.assign.max`M).
-  - Read assignment rates are summarized in Table \@ref(tab:fc-assign-tab) and `r paste0("Figure \\@ref(fig:fc-assign)")`.
+`r if(config_json$feature_count[1] == TRUE){paste0("- Read count assignment from **featureCounts** for RNA-Seq is quite high (between ",fc.assign.min.perc,"% and ",fc.assign.max.perc",%, calculated only from uniquely mapped reads).")}`
+`r if(config_json$feature_count[1] == TRUE){paste0("  - Number of assigned reads is above limits of the recommended number of reads (~",fc.assign.min,"-",fc.assign.max,"M).")}`
+`r if(config_json$feature_count[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:fc-assign-tab) and Figure \\@ref(fig:plotly-fc-assign-pct) & \\@ref(fig:plotly-fc-assign-count).")}`
 
-`r if(var.rsem==1){paste0("- Read count assignment from **RSEM** for RNA-Seq is very high (between ",rsem.assign.min.perc," % and ",rsem.assign.max.perc," %).")}`
-`r if(var.rsem==1){paste0("  - Number of assigned reads is on a border of the recommended number of reads (~",rsem.assign.min,"-",rsem.assign.max,"M).")}`
-`r if(var.rsem==1){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:rsem-assign-tab) and Figure \\@ref(fig:rsem-assign)")}`
+`r if(config_json$feature_count[1] == TRUE){paste0("#### Assignment featureCounts {.tabset}")}`
 
 ```{r tab.id="fc-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - featureCounts.", results='asis', echo=FALSE, ft.split=F}
-fit_to_width(autofit(qflextable(fc.assign[,.(Sample, Assigned, "Assigned (%)"= round(percent_assigned, 2))])),max_width = 9.1)
+if(config_json$feature_count[1] == TRUE){
+  fit_to_width(autofit(qflextable(fc.assign[variable=="Assigned",.(Sample, "Assigned"=value, "Assigned (%)"=percentage)])),max_width = 9.1)
+}
 ```
 
-```{r fc-assign, results='asis', echo=FALSE, fig.cap="Read count assignment to genes (featureCounts).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plotly.fc.assign
+`r if(config_json$feature_count[1] == TRUE){paste0("##### Percentages (counted over reads)")}`
+```{r plotly-fc-reassign-pct, results='asis', echo=FALSE, fig.cap="featureCounts: Assignments. Percentage have been recomputed over reads.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$feature_count[1] == TRUE){plotly.fc.reassign.pct}
 ```
 
+`r if(config_json$feature_count[1] == TRUE){paste0("##### Percentages (counted over mapping)")}`
+```{r plotly-fc-assign-pct, results='asis', echo=FALSE, fig.cap="featureCounts: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$feature_count[1] == TRUE){plotly.fc.assign.pct}
+```
+
+`r if(config_json$feature_count[1] == TRUE){paste0("##### Number of Reads")}`
+```{r plotly-fc-assign-count, results='asis', echo=FALSE, fig.cap="featureCounts: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$feature_count[1] == TRUE){plotly.fc.assign.count}
+```
+
+`r if(config_json$feature_count[1] == TRUE){paste0("#### {-}")}`
+
+`r if(config_json$RSEM[1] == TRUE){paste0("- Read count assignment from **RSEM** for RNA-Seq is very high (between ",rsem.assign.min.perc," % and ",rsem.assign.max.perc," %).")}`
+`r if(config_json$RSEM[1] == TRUE){paste0("  - Number of assigned reads is on a border of the recommended number of reads (~",rsem.assign.min,"-",rsem.assign.max,"M).")}`
+`r if(config_json$RSEM[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:rsem-assign-tab) and Figure \\@ref(fig:rsem-assign).")}`
+
+`r if(config_json$RSEM[1] == TRUE){paste0("#### Assignment RSEM {.tabset}")}`
 
 ```{r tab.id="rsem-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - RSEM.", results='asis', echo=FALSE, ft.split=F}
-if(var.rsem==1){
-fit_to_width(autofit(qflextable(rsem.assign[,.(Sample, Alignable, "Alignable (%)"=round(alignable_percent,2))])),max_width = 9.1)
+if(config_json$RSEM[1] == TRUE){
+fit_to_width(autofit(qflextable(rsem.alignable[,.(Sample, "Alignable"=value, "Alignable (%)"=percentage)])),max_width = 9.1)
 }
 ```
 
-```{r rsem-assign, results='asis', echo=FALSE, fig.cap="Read count assignment to genes (RSEM).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-if(var.rsem==1){
-  plotly.rsem.assign
+`r if(config_json$RSEM[1] == TRUE){paste0("##### Percentages")}`
+
+```{r plot-rsem-assign-pct, results='asis', echo=FALSE, fig.cap="RSEM: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$RSEM[1] == TRUE){plot.rsem.assign.pct}
+```
+
+`r if(config_json$RSEM[1] == TRUE){paste0("##### Number of Reads")}`
+```{r plotly-rsem-assign-count, results='asis', echo=FALSE, fig.cap="RSEM: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$RSEM[1] == TRUE){plotly.rsem.assign.count}
+```
+
+`r if(config_json$RSEM[1] == TRUE){paste0("#### {-}")}`
+
+`r if(config_json$RSEM[1] == TRUE){paste0("- Read count assignment from **RSEM** for RNA-Seq is very high (between ",rsem.assign.min.perc," % and ",rsem.assign.max.perc," %).")}`
+`r if(config_json$RSEM[1] == TRUE){paste0("  - Number of assigned reads is on a border of the recommended number of reads (~",rsem.assign.min,"-",rsem.assign.max,"M).")}`
+`r if(config_json$RSEM[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:rsem-assign-tab) and Figure \\@ref(fig:rsem-assign).")}`
+
+`r if(config_json$RSEM[1] == TRUE){paste0("#### Assignment RSEM {.tabset}")}`
+
+```{r tab.id="kallisto-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - Kallisto.", results='asis', echo=FALSE, ft.split=F}
+if(config_json$kallisto[1] == TRUE){
+fit_to_width(autofit(qflextable(kallisto.assign[variable=="pseudoaligned_reads",.(Sample, "Aligned"=value, "Aligned (%)"=percentage)])),max_width = 9.1)
 }
 ```
 
+`r if(config_json$kallisto[1] == TRUE){paste0("##### Percentages")}`
+
+```{r plot-kallisto-assign-pct, results='asis', echo=FALSE, fig.cap="Kallisto: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$kallisto[1] == TRUE){plot.kallisto.assign.pct}
+```
+
+`r if(config_json$kallisto[1] == TRUE){paste0("##### Number of Reads")}`
+```{r plotly-kallisto-assign-count, results='asis', echo=FALSE, fig.cap="Kallisto: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$kallisto[1] == TRUE){plotly.kallisto.assign.count}
+```
+
+`r if(config_json$kallisto[1] == TRUE){paste0("#### {-}")}`
 
 ### Biotypes
 - All the samples captured mainly protein-coding genes (Figure \@ref(fig:biotype)).
