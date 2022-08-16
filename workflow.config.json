@@ -26,9 +26,11 @@
     "reference",
     "feature_count",
     "RSEM",
-    "salmon_bam",
-    "salmon_fastq",
     "kallisto",
+    "salmon",
+    "salmon_align",
+    "salmon_map",
+    "biobloom",
     "UMI",
     "RNAseq_type",
     "type_of_extraction",
@@ -39,8 +41,7 @@
     "qc_picard_RNA",
     "qc_biotypes_RNA",
     "qc_fastq_screen_RNA",
-    "qc_RSeQC_RNA",
-    "biobloom"
+    "qc_RSeQC_RNA"
   ],
   "gui_params": {
     "primary": {

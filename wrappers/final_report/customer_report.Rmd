@@ -52,17 +52,10 @@ comparison <- unlist(strsplit(unique(config_json$comparison),split="\\|"))
 biotype <- unlist(strsplit(unique(config_json$biotype_list),split="\\|"))
 analysis_type <- paste0("DE_",unlist(strsplit(unique(config_json$analysis_type),split="\\|")))
 
-if(config_json$RSEM[1] == TRUE){
-  var.rsem <- 1
-  DE <- "DE_RSEM"
-}else{
-  var.rsem <- 0
-  DE <- "DE_feature_count"
-}
-
 `%!in%` <- Negate(`%in%`)
 `%!like%` <- Negate(`%like%`)
 
+DE <- "DE_feature_count" # feature_count is usually run by default
 mRNA_DE_FOLDER_PATH <- paste0("../results/",DE,"/")
 INPUTFILES <- paste0("../qc_reports/")
 MQC_DATA <- paste0(INPUTFILES,"all_samples/","multiqc_data/")
@@ -107,7 +100,7 @@ setorder(tabl_sample, condition, Sample)
 # Height for sample plots
 # default is good for few samples and Read coverage plot
 default_height <- 5
-# custom is needed if several samples >= 50 ? -> 10
+# custom is needed if several samples >= 40 ? -> 10
 custom_height1 <- ifelse(num_samples < 40, default_height, 10)
 # another custom if the first one is not enough (rRNA plot can need higher value because of pair-end doubling the amount of samples) -> 15
 custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 40, 15, custom_height1)
@@ -119,7 +112,7 @@ custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 40, 15, custom_
 
 `r if(rna_type == "classic_rev"){paste0("- Samples were sequenced using ",paired," 75 bp reads; NEBNext Ultra II Directional RNA Library Prep Kit for Illumina + polyA selection.")}`
 `r if(rna_type == "quant_fwd"){"- Samples were sequenced using Lexogen Quantseq FWD kit, therefore a lot of reads in UTR regions are expected as well as huge 3’ sequencing bias. These data can only be used for differential expression analysis."}`
-`r if("No" %!in% umi){"- Samples contained 6bp long UMIs used for detection of PCR duplicates in library."}`
+`r if(umi != "No UMI"){"- Samples contained 6bp long UMIs used for detection of PCR duplicates in library."}`
 
 ## Agreed task(s)
 1. General samples QC.
@@ -138,18 +131,20 @@ fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" =
 - Mapped reads were counted and summarized to genes with:
 `r if(config_json$feature_count[1] == TRUE){"  - **featureCounts**."}`
 `r if(config_json$RSEM[1] == TRUE){"  - **RSEM**."}`
-`r if(config_json$salmon[1] == TRUE){"  - **Salmon**."}`
+`r if(config_json$salmon_align[1] == TRUE){"  - **Salmon in alignment mode**."}`
+`r if(config_json$salmon_map[1] == TRUE){"  - **Salmon in mapping mode**."}`
 `r if(config_json$kallisto[1] == TRUE){"  - **Kallisto**."}`
   - Only uniquely mapped and uniquely assigned reads were counted.
 - The library preparation kit strand-specificity is: **`r tolower(strandness)`**, and only reads in this strand should be considered.
 - Following checks were performed to estimate the overall sample quality:
-  - rRNA content estimate (**fastq_screen**).
+  `r if(config_json$display_fastq_screen_RNA[1] == TRUE){" - rRNA content estimate (**fastq_screen**)."}`
   - Read duplication rate (**dupRadar, Picard tools**).
   - Sequenced (targeted) regions (**RSeQC, Picard tools**).
   - 5’/3’ coverage bias (**Picard tools**).
   - Expressed gene biotypes (**featureCounts**).
   - Library strandness (**RSeQC**).
-  - Other quality checks are available upon request.
+  `r if(config_json$display_biobloom[1] == TRUE){"  - Contamination check (**Biobloom tools**)."}`
+  - Other quality checks are available upon request..
 - Complete settings, used commands, tool versions and methodology part for a publication can be provided upon request.
 
 ## Results
@@ -201,12 +196,28 @@ multiqc_star_tabl <- multiqc_star_tabl[, variable := factor(variable, levels = c
 
 tabl_mapread <- multiqc_star[, .(Sample, condition,
                                       uniquely_mapped, uniquely_mapped_percent,
-                                      multimapped, multimapped_percent)]
+                                      multimapped, multimapped_percent,
+                                      mapped = uniquely_mapped+multimapped, mapped_percent = uniquely_mapped_percent + multimapped_percent)]
 setorder(tabl_mapread, condition, Sample)
 
+map.mean.perc <- round(mean(tabl_mapread[,mapped_percent]), 0)
 uni.map.mean.perc <- round(mean(tabl_mapread[,uniquely_mapped_percent]), 0)
-uni.map.min <- round(min(tabl_mapread[,uniquely_mapped]/1E6))
-uni.map.max <- round(max(tabl_mapread[,uniquely_mapped]/1E6))
+multi.map.mean.perc <- round(mean(tabl_mapread[,multimapped_percent]), 0)
+
+if(map.mean.perc > 60){
+  map.perc <- "very high"
+}else if(map.mean.perc > 50 & map.mean.perc <= 60){
+  map.perc <- "high"
+}else if(map.mean.perc > 30 & map.mean.perc <= 50){
+  map.perc <- "moderate"
+}else if(map.mean.perc > 10 & map.mean.perc <= 30){
+  map.perc <- "low"
+}else if(map.mean.perc <= 10){
+  map.perc <- "very low"
+}
+
+map.min <- round(min(tabl_mapread[,mapped]/1E6))
+map.max <- round(max(tabl_mapread[,mapped]/1E6))
 
 star.labcol <- multiqc_star_tabl[, .(variable = unique(variable) , Colour = star.palette, Label = c("Uniquely mapped", "Mapped to multiple loci",
                                                                                                     "Mapped to too many loci","Unmapped: too many missmatches",
@@ -263,8 +274,9 @@ for(i in 1:length(star.labcol.count$variable)){
 
 ```
 
-- The single end reads were aligned to `r species` reference genome with the help of the gene annotation (`r reference`) using STAR aligner.
-- The number and percentage of uniquely- and multi-mapped reads are pretty good for all samples ~`r uni.map.mean.perc`% of uniquely mapped and we are getting approximately the same values across all samples, same applies for number of mapped reads, which varies between ~`r uni.map.min`M and ~`r uni.map.max`M (Table \@ref(tab:tabl-mapread), Figure \@ref(fig:star-map-perc) & \@ref(fig:star-map-count)).
+- The `r paired` reads were aligned to `r species` reference genome with the help of the gene annotation (`r reference`) using STAR aligner.
+- The percentage of uniquely- and multi-mapped reads are `r map.perc` for all samples (~`r map.mean.perc`% with ~`r uni.map.mean.perc`% of uniquely-mapped and ~`r multi.map.mean.perc`% of multi-mapped),
+and the number of mapped reads varies between ~`r map.min`M for `r tabl_mapread[round(min(tabl_mapread[,mapped]/1E6)) == map.min,]$Sample` and ~`r map.max`M for `r tabl_mapread[round(max(tabl_mapread[,mapped]/1E6)) == map.max,]$Sample` (Table \@ref(tab:tabl-mapread), Figure \@ref(fig:star-map-perc) & \@ref(fig:star-map-count)).
 
 ```{r tab.id="tabl-mapread", tab.cap="Number and percentage of uniquely- and multi-mapped reads", results='asis', echo=FALSE, out.width="80%", ft.split=F}
 fit_to_width(autofit(qflextable(tabl_mapread[,.(Sample, condition, "uniquely mapped" = uniquely_mapped, "uniquely mapped (%)" = uniquely_mapped_percent, multimapped, "multimapped (%)" = multimapped_percent)])),max_width = 9.1)
@@ -285,36 +297,39 @@ plotly.multiqc_star_count
 
 #### {-}
 
-### rRNA contamination
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("### rRNA contamination")}`
 ```{r rrna, results='asis', echo=FALSE}
-fastq.screen.files <- fread(paste0(MQC_DATA,"multiqc_fastq_screen.txt"))
-#fastq.screen.files <- merge(config_json[, .(Sample = full_name, condition)], fastq.screen.files[, Sample := gsub("_screen$","",Sample)], by="Sample")
-fastq.screen.files <- fastq.screen.files[, Sample := gsub("_screen$","",Sample)]
+if(config_json$display_fastq_screen_RNA[1] == TRUE){
+  fastq.screen.files <- fread(paste0(MQC_DATA,"multiqc_fastq_screen.txt"))
+  #fastq.screen.files <- merge(config_json[, .(Sample = full_name, condition)], fastq.screen.files[, Sample := gsub("_screen$","",Sample)], by="Sample")
+  fastq.screen.files <- fastq.screen.files[, Sample := gsub("_screen$","",Sample)]
 
-rrna <- fastq.screen.files[, .(Sample, rRNA.perc=get("rRNA percentage"))]
+  rrna <- fastq.screen.files[, .(Sample, rRNA.perc=get("rRNA percentage"))]
 
-rrna.p <- ggplot(rrna, aes(Sample, rRNA.perc)) +
-  geom_bar(stat = "identity", width = 0.8, fill = "#7f0000") +
-  theme_bw() +
-  coord_flip() +
-  ylab("rRNA content (%)") +
-  xlab("") +
-  scale_x_discrete(limits=rev) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("rRNA Content")
+  rrna.p <- ggplot(rrna, aes(Sample, rRNA.perc)) +
+    geom_bar(stat = "identity", width = 0.8, fill = "#7f0000") +
+    theme_bw() +
+    coord_flip() +
+    ylab("rRNA content (%)") +
+    xlab("") +
+    scale_x_discrete(limits=rev) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("rRNA Content")
 
-plotly.rrna.p <- ggplotly(rrna.p, tooltip = "rRNA.perc") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.rrna.p <- ggplotly(rrna.p, tooltip = "rRNA.perc") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
-rrna.max <- round(max(rrna[,rRNA.perc]))
+  rrna.max <- round(max(rrna[,rRNA.perc]))
+}
+
 ```
 
-- Samples had a percentage of rRNA contamination up to `r rrna.max`%
-  - For polyA selection, we would expect ~ 1%, while for rRNA depletion it could be up to 10%.
-  - This can be due to less effective polyA selection procedure, but overall we still have a lot of usable reads and information to perform Differential expression analysis.
-  - The percentages are summarized in Figure \@ref(fig:fastq-screen-rrna).
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("- Samples had a percentage of rRNA contamination up to ",rrna.max,"%.")}`
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("  - For polyA selection, we would expect ~ 1%, while for rRNA depletion it could be up to 10%.")}`
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("  - This can be due to less effective polyA selection procedure, but overall we still have a lot of usable reads and information to perform Differential expression analysis.")}`
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("  - The percentages are summarized in Figure \\@ref(fig:fastq-screen-rrna).")}`
 
 ```{r fastq-screen-rrna, results='asis', echo=FALSE, fig.cap="rRNA estimate.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height2}
-plotly.rrna.p
+if(config_json$display_fastq_screen_RNA[1] == TRUE){plotly.rrna.p}
 ```
 
 ### Mapped regions
@@ -461,22 +476,26 @@ picard.mrna.aligned <- picard.metric.tbl[variable=="mrna", .(mrna=round(mean(pct
 rseqc.mrna <- rseqc.metric.tbl[variable=="mrna", .(mrna=round(mean(percentage),0))]
 
 if(rseqc.intron$intron >= 40){
-  intron.count <- "high"
+  intron.count <- "very high"
 }else if(rseqc.intron$intron >= 20 & rseqc.intron$intron < 40){
-  intron.count <- "quite high"
-}else if(rseqc.intron$intron >= 5 & rseqc.intron$intron < 20){
+  intron.count <- "high"
+}else if(rseqc.intron$intron >= 10 & rseqc.intron$intron < 20){
+  intron.count <- "moderate"
+}else if(rseqc.intron$intron >= 5 & rseqc.intron$intron < 10){
   intron.count <- "low"
 }else if(rseqc.intron$intron < 5){
   intron.count <- "very low"
 }
 
-if(rseqc.mrna$mrna >= 40){
+if(rseqc.mrna$mrna > 70){
+  coding.count <- "very high"
+}else if(rseqc.mrna$mrna > 60 & rseqc.mrna$mrna <= 70){
   coding.count <- "high"
-}else if(rseqc.mrna$mrna >= 20 & rseqc.mrna$mrna < 40){
-  coding.count <- "quite high"
-}else if(rseqc.mrna$mrna >= 5 & rseqc.mrna$mrna < 20){
+}else if(rseqc.mrna$mrna > 40 & rseqc.mrna$mrna <= 60){
+  coding.count <- "moderate"
+}else if(rseqc.mrna$mrna > 20 & rseqc.mrna$mrna <= 40){
   coding.count <- "low"
-}else if(rseqc.mrna$mrna < 5){
+}else if(rseqc.mrna$mrna <= 20){
   coding.count <- "very low"
 }
 
