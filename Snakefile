@@ -38,7 +38,7 @@ if config["RSEM"]:
     analysis.append("RSEM")
 if config["salmon"]:
     if config["salmon_align"]:
-        analysis.append("salmon_align")
+        analysis.append("salmon_aln")
     if config["salmon_map"]:
         analysis.append("salmon_map")
 if config["kallisto"]:

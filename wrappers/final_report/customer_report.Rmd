@@ -325,7 +325,7 @@ if(config_json$display_fastq_screen_RNA[1] == TRUE){
 
 `r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("- Samples had a percentage of rRNA contamination up to ",rrna.max,"%.")}`
 `r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("  - For polyA selection, we would expect ~ 1%, while for rRNA depletion it could be up to 10%.")}`
-`r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("  - This can be due to less effective polyA selection procedure, but overall we still have a lot of usable reads and information to perform Differential expression analysis.")}`
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("  - A less effective polyA selection procedure can lead to a higher percentage of rRNA, but overall we still have a lot of usable reads and information to perform Differential expression analysis.")}`
 `r if(config_json$display_fastq_screen_RNA[1] == TRUE){paste0("  - The percentages are summarized in Figure \\@ref(fig:fastq-screen-rrna).")}`
 
 ```{r fastq-screen-rrna, results='asis', echo=FALSE, fig.cap="rRNA estimate.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height2}
@@ -756,17 +756,26 @@ if(config_json$feature_count[1] == TRUE){
 
 }
 
-if(config_json$salmon_bam[1] == TRUE){
-  salmonB.assign <- fread(paste0(MQC_DATA,"multiqc_salmon.txt"))
-  salmonB.assign <- merge(config_json[, .(Sample = full_name, condition)], salmonB.assign, by="Sample")
-  setorder(salmonB.assign, condition, Sample)
+if(config_json$salmon_map[1] == TRUE){
+  salmonM.files <- list.files(path=INPUTFILES, pattern = "_map.tsv", full.names = T, recursive = T)
+  salmonM.assign <- fread(salmonM.files[1], header=T, stringsAsFactors = F)
+  if (length(salmonM.files) > 1) {
+    for (i in 2:length(salmonM.files)){
+      sample <- fread(salmonM.files[i], header=T, stringsAsFactors = F)
+      salmonM.assign <- rbind(salmonM.assign,sample)
+    }
+  }
+  salmonM.assign[, Sample := gsub("_map$","",Samples)]
+  salmonM.assign <- merge(config_json[, .(Sample = full_name, condition)], salmonM.assign, by="Sample")
+  setorder(salmonM.assign, condition, Sample)
 
-  salmonB.assign <- melt(salmonB.assign[, percent_aligned:=NULL], id.vars = c("Sample","condition","total_reads"))
-  salmonB.assign <- salmonB.assign[, percentage := round(100*value/total_reads, 2), by = "Sample"]
-  salmonB.assign <- salmonB.assign[, label:=variable]
-  levels(salmonB.assign$label) <- c("Pseudoaligned","Not aligned")
+  salmonM.assign <- salmonM.assign[, Total := mapped+unmapped, by=.(Sample)]
+  salmonM.assign <- melt(salmonM.assign, id.vars = c("Sample","condition","Samples","Total"))
+  salmonM.assign <- salmonM.assign[, percentage := round(100*value/Total, 2), by = "Sample"]
+  salmonM.assign <- salmonM.assign[, label:=variable]
+  levels(salmonM.assign$label) <- c("Mapped","Unmapped")
 
-  plot.salmonB.assign.count <- ggplot(salmonB.assign, aes(Sample, value, fill = label)) +
+  plot.salmonM.assign.count <- ggplot(salmonM.assign, aes(Sample, value, fill = label)) +
     geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
     scale_fill_manual(values = star.palette[c(1,5)], name = "") +
     coord_flip() +
@@ -778,11 +787,11 @@ if(config_json$salmon_bam[1] == TRUE){
     theme(legend.key.size = unit(0.6,"line")) +
     guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
     theme(plot.title = element_text(face="bold")) +
-    ggtitle("Kallisto: Alignment Scores")
+    ggtitle("Salmon - mapping mode: Alignment Scores")
 
-  plotly.salmonB.assign.count <- ggplotly(plot.salmonB.assign.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.salmonM.assign.count <- ggplotly(plot.salmonM.assign.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
-  plot.salmonB.assign.pct <- ggplot(salmonB.assign, aes(Sample, percentage, fill = label)) +
+  plot.salmonM.assign.pct <- ggplot(salmonM.assign, aes(Sample, percentage, fill = label)) +
     geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
     scale_fill_manual(values = star.palette[c(1,5)], name = "") +
     coord_flip() +
@@ -794,23 +803,32 @@ if(config_json$salmon_bam[1] == TRUE){
     theme(legend.key.size = unit(0.6,"line")) +
     guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
     theme(plot.title = element_text(face="bold")) +
-    ggtitle("Kallisto: Alignment Scores")
+    ggtitle("Salmon - mapping mode: Alignment Scores")
 
-  plotly.salmonB.assign.pct <- ggplotly(plot.salmonB.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.salmonM.assign.pct <- ggplotly(plot.salmonM.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
 }
 
-if(config_json$salmon_fastq[1] == TRUE){
-  salmonF.assign <- fread(paste0(MQC_DATA,"multiqc_salmon.txt"))
-  salmonF.assign <- merge(config_json[, .(Sample = full_name, condition)], salmonF.assign, by="Sample")
-  setorder(salmonF.assign, condition, Sample)
+if(config_json$salmon_align[1] == TRUE){
+  salmonA.files <- list.files(path=INPUTFILES, pattern = "_aln.tsv", full.names = T, recursive = T)
+  salmonA.assign <- fread(salmonA.files[1], header=T, stringsAsFactors = F)
+  if (length(salmonA.files) > 1) {
+    for (i in 2:length(salmonA.files)){
+      sample <- fread(salmonA.files[i], header=T, stringsAsFactors = F)
+      salmonA.assign <- rbind(salmonA.assign,sample)
+    }
+  }
+  salmonA.assign[, Sample := gsub("_aln$","",Samples)]
+  salmonA.assign <- merge(config_json[, .(Sample = full_name, condition)], salmonA.assign, by="Sample")
+  setorder(salmonA.assign, condition, Sample)
 
-  salmonF.assign <- melt(salmonF.assign[, percent_aligned:=NULL], id.vars = c("Sample","condition","total_reads"))
-  salmonF.assign <- salmonF.assign[, percentage := round(100*value/total_reads, 2), by = "Sample"]
-  salmonF.assign <- salmonF.assign[, label:=variable]
-  levels(salmonF.assign$label) <- c("Pseudoaligned","Not aligned")
+  salmonA.assign <- salmonA.assign[, Total := mapped+unmapped, by=.(Sample)]
+  salmonA.assign <- melt(salmonA.assign, id.vars = c("Sample","condition","Samples","Total"))
+  salmonA.assign <- salmonA.assign[, percentage := round(100*value/Total, 2), by = "Sample"]
+  salmonA.assign <- salmonA.assign[, label:=variable]
+  levels(salmonA.assign$label) <- c("Mapped","Unmapped")
 
-  plot.salmonF.assign.count <- ggplot(salmonF.assign, aes(Sample, value, fill = label)) +
+  plot.salmonA.assign.count <- ggplot(salmonA.assign, aes(Sample, value, fill = label)) +
     geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
     scale_fill_manual(values = star.palette[c(1,5)], name = "") +
     coord_flip() +
@@ -822,11 +840,11 @@ if(config_json$salmon_fastq[1] == TRUE){
     theme(legend.key.size = unit(0.6,"line")) +
     guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
     theme(plot.title = element_text(face="bold")) +
-    ggtitle("Kallisto: Alignment Scores")
+    ggtitle("Salmon - alignment mode: Alignment Scores")
 
-  plotly.salmonF.assign.count <- ggplotly(plot.salmonF.assign.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.salmonA.assign.count <- ggplotly(plot.salmonA.assign.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
-  plot.salmonF.assign.pct <- ggplot(salmonF.assign, aes(Sample, percentage, fill = label)) +
+  plot.salmonA.assign.pct <- ggplot(salmonA.assign, aes(Sample, percentage, fill = label)) +
     geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
     scale_fill_manual(values = star.palette[c(1,5)], name = "") +
     coord_flip() +
@@ -838,10 +856,9 @@ if(config_json$salmon_fastq[1] == TRUE){
     theme(legend.key.size = unit(0.6,"line")) +
     guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
     theme(plot.title = element_text(face="bold")) +
-    ggtitle("Kallisto: Alignment Scores")
+    ggtitle("Salmon - alignment mode: Alignment Scores")
 
-  plotly.salmonF.assign.pct <- ggplotly(plot.salmonF.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
-
+  plotly.salmonA.assign.pct <- ggplotly(plot.salmonA.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
 }
 
 if(config_json$kallisto[1] == TRUE){
@@ -885,12 +902,12 @@ if(config_json$kallisto[1] == TRUE){
     ggtitle("Kallisto: Alignment Scores")
 
   plotly.kallisto.assign.pct <- ggplotly(plot.kallisto.assign.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
-
 }
 
 ```
 
-`r if(config_json$feature_count[1] == TRUE){paste0("- Read count assignment from **featureCounts** for RNA-Seq is quite high (between ",fc.assign.min.perc,"% and ",fc.assign.max.perc",%, calculated only from uniquely mapped reads).")}`
+
+`r if(config_json$feature_count[1] == TRUE){paste0("- Read count assignment from **featureCounts** for RNA-Seq is quite high (between ",fc.assign.min.perc,"% and ",fc.assign.max.perc,"%, calculated only from uniquely mapped reads).")}`
 `r if(config_json$feature_count[1] == TRUE){paste0("  - Number of assigned reads is above limits of the recommended number of reads (~",fc.assign.min,"-",fc.assign.max,"M).")}`
 `r if(config_json$feature_count[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:fc-assign-tab) and Figure \\@ref(fig:plotly-fc-assign-pct) & \\@ref(fig:plotly-fc-assign-count).")}`
 
@@ -919,9 +936,10 @@ if(config_json$feature_count[1] == TRUE){plotly.fc.assign.count}
 
 `r if(config_json$feature_count[1] == TRUE){paste0("#### {-}")}`
 
-`r if(config_json$RSEM[1] == TRUE){paste0("- Read count assignment from **RSEM** for RNA-Seq is very high (between ",rsem.assign.min.perc," % and ",rsem.assign.max.perc," %).")}`
+
+`r if(config_json$RSEM[1] == TRUE){paste0("- Read count assignment from **RSEM** for RNA-Seq is very high (between ",rsem.assign.min.perc," % and ",rsem.assign.max.perc,"%).")}`
 `r if(config_json$RSEM[1] == TRUE){paste0("  - Number of assigned reads is on a border of the recommended number of reads (~",rsem.assign.min,"-",rsem.assign.max,"M).")}`
-`r if(config_json$RSEM[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:rsem-assign-tab) and Figure \\@ref(fig:rsem-assign).")}`
+`r if(config_json$RSEM[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:rsem-assign-tab) and Figure \\@ref(fig:plotly-rsem-assign-count).")}`
 
 `r if(config_json$RSEM[1] == TRUE){paste0("#### Assignment RSEM {.tabset}")}`
 
@@ -932,9 +950,8 @@ fit_to_width(autofit(qflextable(rsem.alignable[,.(Sample, "Alignable"=value, "Al
 ```
 
 `r if(config_json$RSEM[1] == TRUE){paste0("##### Percentages")}`
-
-```{r plot-rsem-assign-pct, results='asis', echo=FALSE, fig.cap="RSEM: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-if(config_json$RSEM[1] == TRUE){plot.rsem.assign.pct}
+```{r plotly-rsem-assign-pct, results='asis', echo=FALSE, fig.cap="RSEM: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$RSEM[1] == TRUE){plotly.rsem.assign.pct}
 ```
 
 `r if(config_json$RSEM[1] == TRUE){paste0("##### Number of Reads")}`
@@ -944,11 +961,56 @@ if(config_json$RSEM[1] == TRUE){plotly.rsem.assign.count}
 
 `r if(config_json$RSEM[1] == TRUE){paste0("#### {-}")}`
 
-`r if(config_json$RSEM[1] == TRUE){paste0("- Read count assignment from **RSEM** for RNA-Seq is very high (between ",rsem.assign.min.perc," % and ",rsem.assign.max.perc," %).")}`
-`r if(config_json$RSEM[1] == TRUE){paste0("  - Number of assigned reads is on a border of the recommended number of reads (~",rsem.assign.min,"-",rsem.assign.max,"M).")}`
-`r if(config_json$RSEM[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:rsem-assign-tab) and Figure \\@ref(fig:rsem-assign).")}`
 
-`r if(config_json$RSEM[1] == TRUE){paste0("#### Assignment RSEM {.tabset}")}`
+`r if(config_json$salmon_align[1] == TRUE){paste0("  - Read assignment from Salmon in alignment mode are summarized in Table \\@ref(tab:salmonA-assign-tab) and Figure \\@ref(fig:plotly-salmonA-assign-count).")}`
+
+`r if(config_json$salmon_align[1] == TRUE){paste0("#### Assignment Salmon - alignment mode {.tabset}")}`
+
+```{r tab.id="salmonA-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - Salmon (alignment mode)", results='asis', echo=FALSE, ft.split=F}
+if(config_json$salmon_align[1] == TRUE){
+fit_to_width(autofit(qflextable(salmonA.assign[variable=="mapped",.(Sample, "Aligned"=value, "Aligned (%)"=percentage)])),max_width = 9.1)
+}
+```
+
+`r if(config_json$salmon_align[1] == TRUE){paste0("##### Percentages")}`
+```{r plotly-salmonA-assign-pct, results='asis', echo=FALSE, fig.cap="Salmon (alignment mode): Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$salmon_align[1] == TRUE){plotly.salmonA.assign.pct}
+```
+
+`r if(config_json$salmon_align[1] == TRUE){paste0("##### Number of Reads")}`
+```{r plotly-salmonA-assign-count, results='asis', echo=FALSE, fig.cap="Salmon (alignment mode): Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$salmon_align[1] == TRUE){plotly.salmonA.assign.count}
+```
+
+`r if(config_json$salmon_align[1] == TRUE){paste0("#### {-}")}`
+
+
+`r if(config_json$salmon_map[1] == TRUE){paste0("  - Read assignment from Salmon in mapping mode are summarized in Table \\@ref(tab:salmonM-assign-tab) and Figure \\@ref(fig:plotly-salmonM-assign-count).")}`
+
+`r if(config_json$salmon_map[1] == TRUE){paste0("#### Assignment Salmon - mapping mode {.tabset}")}`
+
+```{r tab.id="salmonM-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - Salmon (mapping mode)", results='asis', echo=FALSE, ft.split=F}
+if(config_json$salmon_map[1] == TRUE){
+fit_to_width(autofit(qflextable(salmonM.assign[variable=="mapped",.(Sample, "Aligned"=value, "Aligned (%)"=percentage)])),max_width = 9.1)
+}
+```
+
+`r if(config_json$salmon_map[1] == TRUE){paste0("##### Percentages")}`
+```{r plotly-salmonM-assign-pct, results='asis', echo=FALSE, fig.cap="Salmon (mapping mode): Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$salmon_map[1] == TRUE){plotly.salmonM.assign.pct}
+```
+
+`r if(config_json$salmon_map[1] == TRUE){paste0("##### Number of Reads")}`
+```{r plotly-salmonM-assign-count, results='asis', echo=FALSE, fig.cap="Salmon (mapping mode): Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$salmon_map[1] == TRUE){plotly.salmonM.assign.count}
+```
+
+`r if(config_json$salmon_map[1] == TRUE){paste0("#### {-}")}`
+
+
+`r if(config_json$kallisto[1] == TRUE){paste0("  - Read assignment from Kallisto are summarized in Table \\@ref(tab:kallisto-assign-tab) and Figure \\@ref(fig:plotly-kallisto-assign-count).")}`
+
+`r if(config_json$kallisto[1] == TRUE){paste0("#### Assignment Kallisto {.tabset}")}`
 
 ```{r tab.id="kallisto-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - Kallisto.", results='asis', echo=FALSE, ft.split=F}
 if(config_json$kallisto[1] == TRUE){
@@ -957,9 +1019,8 @@ fit_to_width(autofit(qflextable(kallisto.assign[variable=="pseudoaligned_reads",
 ```
 
 `r if(config_json$kallisto[1] == TRUE){paste0("##### Percentages")}`
-
-```{r plot-kallisto-assign-pct, results='asis', echo=FALSE, fig.cap="Kallisto: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-if(config_json$kallisto[1] == TRUE){plot.kallisto.assign.pct}
+```{r plotly-kallisto-assign-pct, results='asis', echo=FALSE, fig.cap="Kallisto: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$kallisto[1] == TRUE){plotly.kallisto.assign.pct}
 ```
 
 `r if(config_json$kallisto[1] == TRUE){paste0("##### Number of Reads")}`
