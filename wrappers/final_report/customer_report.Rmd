@@ -50,12 +50,16 @@ config_json[,full_name := sapply(1:length(config_json$samples),function(x) confi
 
 comparison <- unlist(strsplit(unique(config_json$comparison),split="\\|"))
 biotype <- unlist(strsplit(unique(config_json$biotype_list),split="\\|"))
-analysis_type <- paste0("DE_",unlist(strsplit(unique(config_json$analysis_type),split="\\|")))
+analysis_type <- unlist(strsplit(unique(config_json$analysis_type),split="\\|"))
+DE <- paste0("DE_",analysis_type) # feature_count is usually run by default
+analysis_type <- gsub("feature_count","featureCount",analysis_type)
+analysis_type <- gsub("kallisto","Kallisto",analysis_type)
+analysis_type <- gsub("salmon_aln","Salmon (alignment mode)",analysis_type)
+analysis_type <- gsub("salmon_map","Salmon (mapping mode)",analysis_type)
 
 `%!in%` <- Negate(`%in%`)
 `%!like%` <- Negate(`%like%`)
 
-DE <- "DE_feature_count" # feature_count is usually run by default
 mRNA_DE_FOLDER_PATH <- paste0("../results/",DE,"/")
 INPUTFILES <- paste0("../qc_reports/")
 MQC_DATA <- paste0(INPUTFILES,"all_samples/","multiqc_data/")
@@ -1105,88 +1109,88 @@ if(length(unique(pct$Sample)) == 1){
 - All the index files (.bai, .fai, .idx) must be in the same folder as their "parent" files otherwise IGV wouldn't open them.
 
 # DE analysis
-- For the DE analysis we used gene counts from `r ifelse(var.rsem==1,"RSEM","featureCounts")` tool.
+- For the DE analysis we used gene counts from the following tool(s): `r paste(analysis_type, collapse=", ")`.
 
 ## Expression-based quality check
-- Read counts for coding genes (mostly protein-coding genes) distribution is depicted in Figure \@ref(fig:de-norm-count).
-- Post-normalization counts (~normalized expressions) seem to be OK (Figure \@ref(fig:de-norm-count)).
-- Gene expression dispersion look normal.
+### Normalization {.tabset}
+- Read counts for coding genes (mostly protein-coding genes) distribution is depicted in the following Figure(s).
+- Post-normalization counts (~normalized expressions) can be controlled for unusual remaining differences in expression level between samples.
+- If the normalized expression is not similar between samples, it might be needed to sub-sample or remove sample(s) with too high expression difference.
 
-```{r de-norm-count, fig.cap = paste0("Number of reads assigned to coding genes for all the samples before normalization (raw counts). Coding genes depth for all the samples after normalization (normalized counts)."), echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
+```{r de-norm-count, echo=FALSE, out.width="80%", results="asis", dev="svg"}
 
-if(config_json$conditions_to_compare[1] == "all"){
-  ppnc.files <- list.files(path=paste0("../results/",DE,"/",comparison[1],"/all/"),pattern ="pre_post_norm_counts.svg", full.names = T)
-}else{
-  ppnc.files <- list.files(path=paste0("../results/",DE,"/",comparison,"/all/"),pattern ="pre_post_norm_counts.svg", full.names = T)
-}
+norm.plot<-function(analysis_type = analysis_type, DE = DE){
+  output<-cat("")
+  for(j in 1:length(analysis_type)){
+    output<-c(output,cat("#### ",analysis_type[j],"\n"))
 
-if(length(ppnc.files)>1){
-  for(i in 2:length(ppnc.files)){
-    cat("<div align='center'><img src=",ppnc.files[i]," width='80%'/></div>")
-    #cat("![](",ppnc.files[i],")")
-    cat('\n\n')
+    if(config_json$conditions_to_compare[1] == "all"){
+      ppnc.files <- list.files(path=paste0("../results/",DE[j],"/",comparison[1],"/all/"),pattern ="pre_post_norm_counts.svg", full.names = T)
+    }else{
+      ppnc.files <- list.files(path=paste0("../results/",DE[j],"/",comparison,"/all/"),pattern ="pre_post_norm_counts.svg", full.names = T)
+    }
+
+    for(i in 1:length(ppnc.files)){
+      output<-c(output,cat("<div align='center'><img src=",ppnc.files[i]," width='80%'/></div>"))
+      output<-c(output,cat("\n\n"))
+    }
   }
+  #output<-c(output,cat("## {-}"))
+  return(output)
 }
 
-knitr::include_graphics(ppnc.files[1])
+norm.plot(analysis_type, DE)
+
 ```
 
-- Clustering of the samples (based on genes expression) shows that all the samples cluster together by their condition.
-  - This is summarized in heatmap in Figure \@ref(fig:de-heatmap).
-- PCA shows a similar effect as the previous clustering.
-  - PCA is depicted in Figure \@ref(fig:de-pca).
+### {-}
 
-```{r de-heatmap, fig.cap = "Clustering of samples by the gene expression (DESeq2 log2 normalization).", echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
+Number of reads assigned to coding genes for all the samples before normalization (raw counts) and after normalization (normalized counts).
 
-if(config_json$conditions_to_compare[1] == "all"){
-  heatmap.sample.files <- data.table(comp = comparison[1])
-  heatmap.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log_batch.png")), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log_batch.png"), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log.png"))]
-}else{
-  heatmap.sample.files <- data.table(comp = comparison)
-  heatmap.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log_batch.png")), paste0("../results/",DE,"/",comparison,"/all/heatmaps_samples_log_batch.png"), paste0("../results/",DE,"/",comp,"/all/heatmaps_samples_log.png"))]
-}
+### Sample clustering {.tabset}
+- Clustering of the samples (based on genes expression) shows if all the samples cluster together by their condition.
+  - This is depicted in PCA plot (left).
+  - This is summarized in heatmap (right).
+- Samples from different condition clustering together might indicate a reduce effect coming from the tested treatment which often leads to low differentially expressed gene identification.
 
-#heatmap.sample.files = list.files(paste0(mRNA_DE_FOLDER_PATH,comparison$cp,"/all/"), pattern = "heatmaps_samples_log", full.names = T)
+```{r de-pca, echo=FALSE, out.width="80%", results="asis", dev="svg"}
 
-if(length(heatmap.sample.files$path)>1){
-  for(i in 2:length(heatmap.sample.files$path)){
-    cat("<div align='center'><img src=",heatmap.sample.files$path[i]," width='80%'/></div>")
-    #cat("![](",heatmap.sample.files$path[i],")")
-    cat('\n\n')
+pca_heatmap.plot<-function(analysis_type = analysis_type, DE = DE){
+  output<-cat("")
+  for(j in 1:length(analysis_type)){
+    output<-c(output,cat("#### ",analysis_type[j],"\n"))
+
+    if(config_json$conditions_to_compare[1] == "all"){
+      sample.sample.files <- data.table(comp = comparison[1])
+      sample.sample.files[, path_pca:=ifelse(file.exists(paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA_batch2.svg")), paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA_batch2.svg"), paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA2.svg"))]
+      sample.sample.files[, path_heatmap:=ifelse(file.exists(paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log_batch.png")), paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log_batch.png"), paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log.png"))]
+    }else{
+      sample.sample.files <- data.table(comp = comparison)
+      sample.sample.files[, path_pca:=ifelse(file.exists(paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA_batch2.svg")), paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA_batch2.svg"), paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA2.svg"))]
+      sample.sample.files[, path_heatmap:=ifelse(file.exists(paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log_batch.png")), paste0("../results/",DE[j],"/",comparison,"/all/heatmaps_samples_log_batch.png"), paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log.png"))]
+    }
+
+    for(i in 1:length(sample.sample.files$path_pca)){
+      output<-c(output,cat("<div align='center'><img src=",sample.sample.files$path_pca[i]," width='50%' float='left'/><img src=",sample.sample.files$path_heatmap[i]," width='50%' float='right'/></div>"))
+      output<-c(output,cat("\n\n"))
+    }
   }
+  #output<-c(output,cat("\n### {-}"))
+  return(output)
 }
 
-knitr::include_graphics(heatmap.sample.files$path[1])
+pca_heatmap.plot(analysis_type, DE)
+
 ```
 
+### {-}
 
-```{r de-pca, fig.cap = "PCA (first two components) visualization of all samples (DESeq2 VST normalization).", echo=FALSE, out.width="80%", fig.align="center", results="asis", fig.show="hold", dev="svg"}
-
-if(config_json$conditions_to_compare[1] == "all"){
-  sample.sample.files <- data.table(comp = comparison[1])
-  sample.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch2.svg")), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch2.svg"), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA2.svg"))]
-}else{
-  sample.sample.files <- data.table(comp = comparison)
-  sample.sample.files[, path:=ifelse(file.exists(paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch2.svg")), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA_batch2.svg"), paste0("../results/",DE,"/",comp,"/all/sample_to_sample_PCA2.svg"))]
-}
-
-#sample.sample.files = list.files(paste0(mRNA_DE_FOLDER_PATH,comparison$cp,"/all/"), pattern = "sample_to_sample_PCA.png", full.names = T)
-
-if(length(sample.sample.files$path)>1){
-  for(i in 2:length(sample.sample.files$path)){
-    cat("<div align='center'><img src=",sample.sample.files$path[i]," width='80%'/></div>")
-    #cat("![](",sample.sample.files$path[i],")")
-    cat('\n\n')
-  }
-}
-
-knitr::include_graphics(sample.sample.files$path[1])
-```
+PCA (first two components) visualization of all samples (DESeq2 VST normalization).
+Heatmap of samples clustered by gene expression (DESeq2 log2 normalization).
 
 ## Differential expression results
 
 - Please note that for visualization purposes we had to set a predefined cut-off value for some of the parameters (adj.p-value and logFC)
-  - **Please read the disclaimer at the beginning of the report for more information about selected cut-off values!**
 
 - In this section, we might provide several results as the number of compared conditions is variable between experiments
 - Differential gene expression was calculated by two separate tools - edgeR and DESeq2
