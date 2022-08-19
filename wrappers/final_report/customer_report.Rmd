@@ -1228,19 +1228,19 @@ no_null<-pca_heatmap.plot(analysis_type, DE)
   - **Note for DESeq2**: By default, DESeq2 applies independent filtering which aims at removing genes which are potential outliers or show “strange” behavior (~large variance). Filtered genes are then marked by NA in either p-value or adj.p-value column. This filtering might be in some cases too strict and might cause a loss of interesting results. For this reason, we also make DESeq2 results without the independent filtering (DESeq2_noIndFilt). If you choose DESeq2 results, I recommend to start with filtered results but look at the end of the table at the filtered genes (genes with NA in p-value/adj.-value are at the bottom of the table). In case you see some interesting results there you might consider switching to the unfiltered results. In edgeR analysis, only genes with very low expression are excluded (1 read-per-million reads in at least 3 samples).
 - The full description of a DE results is given after in the Output files section
 
-- Number of DE genes with default cut-off values is summarized in Table \@ref(tab:tabl-de-de)
+- Number of DE genes with default cut-off values is summarized in the following [Table](#summary-table).
   - Please note this is only a tentative view on approximate differences between the conditions and not final results.
-- Volcano plot visualization visualizes log2FC (x-axis) and adj.p-value (y-axis).
+- [Volcano plot](#volcano-ma-link) visualization visualizes log2FC (x-axis) and adj.p-value (y-axis).
   - Colored dots highlight genes above the defined adj.p-value cut-off value, blue lines show defined log2FC cut-off value.
-  - Volcano plot from DESeq2 results can be found in Figure \@ref(fig:de-volcano).
-- MA plot visualizes mean expression (x-axis) and log2FC (y-axis).
+  - The Volcano plot presented here are from DESeq2 results.
+- [MA plot](#volcano-ma-link) visualizes mean expression (x-axis) and log2FC (y-axis).
   - Colored dots highlight genes above the defined cut-off values (both adj.p-value and log2FC).
-  - MA plot from DESeq2 results can be found in Figure \@ref(fig:de-ma-plot).
-- An example of maximum top 20 most DE genes (by adj.p-value) can be found in Figure \@ref(fig:de-top-de).
+  - The MA plot presented here are from DESeq2 results.
+- An example of maximum top 20 most DE genes (by adj.p-value) can be found in the [heatmap](#heatmap-link) below.
   - The selection of a maximum 20 genes is always based on compared conditions but visualizes expression values from all other conditions if applicable.
 
 
-### Summary table {.tabset}
+### <a name="summary-table"> </a> Summary table {.tabset}
 
 ```{r tab.id="tabl-de-de", echo=FALSE, results="asis", ft.split=F}
 summary.table<-function(comparison=comparison, analysis_type = analysis_type, DE = DE){
@@ -1315,6 +1315,8 @@ Summary or number of DE genes based on default cut-off values from all three DE 
 
 ### Volcano & MA plots {.tabset}
 
+<a name="volcano-ma-link"> </a>
+
 ```{r de-volcano-ma, echo=FALSE, out.width="80%", results="asis", dev="svg"}
 
 volcano.ma.plots<-function(comparison=comparison, analysis_type = analysis_type, DE = DE){
@@ -1376,6 +1378,9 @@ no_null<-volcano.ma.plots(comparison, analysis_type, DE)
 ### {-}
 
 ### TOP DE genes {.tabset}
+
+<a name="heatmap-link"> </a>
+
 ```{r de-top-de, echo=FALSE, results="asis", dev="svg"}
 
 top.de.plots<-function(comparison=comparison, analysis_type = analysis_type, DE = DE){
