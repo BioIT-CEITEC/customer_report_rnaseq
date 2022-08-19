@@ -69,6 +69,12 @@ highchart.v4 <- c("#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c8
 rseqc.palette <- c("#7cb5ec","#434348","#90ed7d","#f7a35c","#8085e9","#f15c80","#e4d354","#2b908f","#f45b5b","#91e8e1","#cccccc","#7f0000")
 biobloom.palette <- c("#7cb5ec","#434348","#90ed7d","#f7a35c","#8085e9","#f15c80","#e4d354","#2b908f","#f45b5b","#91e8e1","#148E0B","#FDE74C","#7f0000","#cccccc")
 star.palette <- c("#437bb1","#7cb5ec","#f7a35c","#e63491","#b1084c","#7f0000")
+
+# biobloom ref table
+biobloom_ref<-data.table(species=c("human","mouse","rat","budding yeast","fruit fly","dog","thale cress","rape","nematode"),
+                         ref=c("human_38","mouse","rat","yeast","fruit_fly","dog","A.thaliana","brassica","C.elegans"))
+biobloom_ref<-biobloom_ref[species==config_json$species[1],]
+
 ```
 
 # Acknowledgement
@@ -139,16 +145,17 @@ fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" =
 `r if(config_json$salmon_map[1] == TRUE){"  - **Salmon in mapping mode**."}`
 `r if(config_json$kallisto[1] == TRUE){"  - **Kallisto**."}`
   - Only uniquely mapped and uniquely assigned reads were counted.
+
 - The library preparation kit strand-specificity is: **`r tolower(strandness)`**, and only reads in this strand should be considered.
 - Following checks were performed to estimate the overall sample quality:
-  `r if(config_json$display_fastq_screen_RNA[1] == TRUE){" - rRNA content estimate (**fastq_screen**)."}`
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE){"  - rRNA content estimate (**fastq_screen**)."}`
   - Read duplication rate (**dupRadar, Picard tools**).
   - Sequenced (targeted) regions (**RSeQC, Picard tools**).
   - 5’/3’ coverage bias (**Picard tools**).
   - Expressed gene biotypes (**featureCounts**).
   - Library strandness (**RSeQC**).
-  `r if(config_json$display_biobloom[1] == TRUE){"  - Contamination check (**Biobloom tools**)."}`
-  - Other quality checks are available upon request..
+`r if(config_json$display_biobloom[1] == TRUE){"  - Contamination check (**Biobloom tools**)."}`
+- Other quality checks are available upon request..
 - Complete settings, used commands, tool versions and methodology part for a publication can be provided upon request.
 
 ## Results
@@ -335,6 +342,96 @@ if(config_json$display_fastq_screen_RNA[1] == TRUE){
 ```{r fastq-screen-rrna, results='asis', echo=FALSE, fig.cap="rRNA estimate.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height2}
 if(config_json$display_fastq_screen_RNA[1] == TRUE){plotly.rrna.p}
 ```
+
+`r if(config_json$display_biobloom[1] == TRUE){"### Species contamination"}`
+
+```{r biobloom-check, echo=FALSE}
+
+if(config_json$display_biobloom[1] == TRUE){
+  biobloom.files <- list.files(INPUTFILES, pattern = ".biobloom_summary.tsv", recursive = T, full.names = T)
+  biobloomCounts <- fread(biobloom.files[1], header=T, stringsAsFactors = F)
+  biobloomCounts[, `:=` (total = hits + misses, value = hits - shared, percentage = (hits - shared)/(hits + misses)), by = filter_id] # count total number of matches and species percentage (without shared)
+  biobloomCounts[, Sample := gsub(".*/","",gsub(".biobloom_summary.tsv","",biobloom.files[1]))] # add column Sample
+
+  if (length(biobloom.files) > 1) {
+    for (i in 2:length(biobloom.files)){
+      sample <- fread(biobloom.files[i], header=T, stringsAsFactors = F)
+      sample[, `:=` (total = hits + misses, value = hits - shared, percentage = (hits - shared)/(hits + misses)), by = filter_id] # count total number of matches and species percentage (without shared)
+      sample[, Sample := gsub(".*/","",gsub(".biobloom_summary.tsv","",biobloom.files[i]))] # add column Sample
+      biobloomCounts <- rbind(biobloomCounts,sample)
+    }
+  }
+
+  # extract species of interest average percentage
+  biobloomCounts.species.mean <- round(mean(100*biobloomCounts[filter_id == biobloom_ref$ref,]$percentage,0))
+
+  biobloom_plot <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'biobloom_tools') %>%
+          tidyr::unnest(cols = plot.biobloom_tools)
+  biobloom_plot <- as.data.table(biobloom_plot)
+  setnames(biobloom_plot,"metadata.sample_id","Sample")
+  biobloom_plot <- biobloom_plot[, Sample := gsub(".biobloom","", Sample)]
+  biobloom_plot <- melt(biobloom_plot, id.vars = c("Sample"))
+  biobloom_plot <- biobloom_plot[, variable := factor(variable,
+                                     levels = c("human_38","mouse","yeast","fruit_fly","athaliana","celegans","multiple_genomes","no_match"),
+                                     labels = c("human","mouse","yeast","fruit fly","A. thaliana","C. elegans","Multiple genomes","No match"))]
+  biobloom_plot <- biobloom_plot[, total := sum(value), by=.(Sample)]
+  biobloom_plot <- biobloom_plot[, percentage := round(100*value/total, 2)]
+
+  plot.biobloom.pct <- ggplot(biobloom_plot, aes(Sample, percentage, fill = variable)) +
+  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+  scale_fill_manual(values = c(biobloom.palette[1:(length(levels(biobloom_plot$variable))-2)],biobloom.palette[13:14])) +
+  coord_flip() +
+  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+  xlab("") +
+  scale_x_discrete(limits=rev) +
+  theme_bw() +
+  theme(legend.position="bottom") +
+  theme(legend.key.size = unit(0.6,"line")) +
+  guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+  theme(plot.title = element_text(face="bold")) +
+  ggtitle("BioBloom Tools: Alignment counts per species")
+
+  plotly.biobloom.pct <- ggplotly(plot.biobloom.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  plot.biobloom.count <- ggplot(biobloom_plot, aes(Sample, value, fill = variable)) +
+  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+  scale_fill_manual(values = c(biobloom.palette[1:(length(levels(biobloom_plot$variable))-2)],biobloom.palette[13:14])) +
+  coord_flip() +
+  ylab("Number of hits") +
+  xlab("") +
+  scale_x_discrete(limits=rev) +
+  theme_bw() +
+  theme(legend.position="bottom") +
+  theme(legend.key.size = unit(0.6,"line")) +
+  guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+  theme(plot.title = element_text(face="bold")) +
+  ggtitle("BioBloom Tools: Alignment counts per species")
+
+  plotly.biobloom.count <- ggplotly(plot.biobloom.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+}
+
+```
+
+`r if(config_json$display_biobloom[1] == TRUE){"#### BioBloom Tools results {.tabset}"}`
+
+`r if(config_json$display_biobloom[1] == TRUE){"- To check contamination we used basic model organisms eg. Mouse, Yeast, *D. Melanogaster*, *A. thaliana* and *C. elegans*"}`
+`r if(config_json$display_biobloom[1] == TRUE){paste0("- All samples have about ",biobloomCounts.species.mean,"% of reads mapped only to ",config_json$species_name[1],", which is quite good and expected number")}`
+`r if(config_json$display_biobloom[1] == TRUE){"- The different amount are summarized in Figure \\@ref(fig:biobloom-pct) & \\@ref(fig:biobloom-count)."}`
+
+`r if(config_json$display_biobloom[1] == TRUE){"##### Percentages"}`
+
+```{r biobloom-pct, results='asis', echo=FALSE, fig.cap="Species contamination (Percentage of hits).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$display_biobloom[1] == TRUE){plotly.biobloom.pct}
+```
+
+`r if(config_json$display_biobloom[1] == TRUE){"##### Number of hits"}`
+
+```{r biobloom-count, results='asis', echo=FALSE, fig.cap="Species contamination (Number of hits).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$display_biobloom[1] == TRUE){plotly.biobloom.count}
+```
+
+`r if(config_json$display_biobloom[1] == TRUE){"#### {-}"}`
 
 ### Mapped regions
 ```{r rseqc-metrics, echo=FALSE}
