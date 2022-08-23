@@ -1158,67 +1158,91 @@ if(config_json$kallisto[1] == TRUE){plotly.kallisto.assign.count}
 
 `r if(config_json$kallisto[1] == TRUE){paste0("#### {-}")}`
 
-### Biotypes
-- All the samples captured mainly protein-coding genes (Figure \@ref(fig:biotype)).
-  - This is expected from polyA selection based libraries.
+```{r biotype-count, fig.cap = "Captured gene biotypes.", echo=FALSE, out.width="90%", fig.width=7, fig.height = custom_height1, fig.align="center", fig.show="hold", dev="svg"}
+if(config_json$display_biotypes_RNA[1] == TRUE){
+  biotype.files <- list.files(paste0(INPUTFILES), pattern = ".biotype_counts.txt", recursive = T)
+  featureCounts <- fread(paste0(INPUTFILES,biotype.files[1]), header=T, stringsAsFactors = F)
+  if (length(biotype.files) > 1) {
+    for (i in 2:length(biotype.files)){
+      sample <- fread(paste0(INPUTFILES,biotype.files[i]), header=T, stringsAsFactors = F)
+      featureCounts <- merge(featureCounts,sample,by = "Geneid")
+    }
+  }
+  colnames(featureCounts)[-1]<-sapply(biotype.files,function(x) gsub(".biotype_counts.txt","",basename(x)))  # Rename columns - split after first "_"
 
-```{r biotype, fig.cap = "Captured gene biotypes.", echo=FALSE, out.width="90%", fig.width=7, fig.height = custom_height1, fig.align="center", fig.show="hold", dev="svg"}
-biotype.files <- list.files(paste0(INPUTFILES), pattern = ".biotype_counts.txt", recursive = T)
-featureCounts <- fread(paste0(INPUTFILES,biotype.files[1]), header=T, stringsAsFactors = F)
-if (length(biotype.files) > 1) {
-  for (i in 2:length(biotype.files)){
-    sample <- fread(paste0(INPUTFILES,biotype.files[i]), header=T, stringsAsFactors = F)
-    featureCounts <- merge(featureCounts,sample,by = "Geneid")
+  featureCounts <- melt(featureCounts, id.vars = "Geneid", variable.name = "Sample")
+  featureCounts <- merge(config_json[, .(Sample = full_name)], featureCounts, by = "Sample")
+
+  featureCounts[, percentage := round((100*value/sum(value)),2), by=Sample] # compute percentage
+  featureCounts[, total := sum(value), by = Sample]
+  pct <- featureCounts[percentage >=2 ,] # Get abundant features (>= 2%)
+
+  mean.pct <- pct[,.(Mean = mean(percentage)), by=.(Geneid)]
+  setorder(mean.pct,-Mean)
+  mean.pct$Geneid <- factor(mean.pct$Geneid, levels=mean.pct$Geneid[order(-mean.pct$Mean)], ordered=TRUE)
+  max.lvl <- length(levels(mean.pct$Geneid))
+  levels(mean.pct$Geneid)[1+max.lvl]<-"other"
+
+  others <- pct[, .(Geneid = "other", value = total - sum(value), percentage = round(100-(sum(percentage)),2)), by = .(Sample, total)] # Other features - added together to one
+  others <- others[, .(Geneid, Sample, value, percentage, total)]
+
+  pct <- rbind(pct, others)
+  setorder(pct, Sample, -value, Geneid)
+  pct$Geneid <- factor(pct$Geneid, levels=levels(mean.pct$Geneid), ordered=TRUE)
+
+  ### Plot Pie plot only if one sample
+  if(length(unique(pct$Sample)) >= 1){
+    mybar.pct <- ggplot(data = pct, aes(x=Sample, y=percentage, fill=Geneid)) +
+            geom_bar(stat="identity") +
+            scale_fill_manual(values = c(biobloom.palette[1:max.lvl],biobloom.palette[14]), name = "") +
+            theme_bw() +
+            coord_flip() +
+            scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+            xlab("") +
+            scale_x_discrete(limits=rev) +
+            theme(plot.title = element_text(face="bold")) +
+            ggtitle("Gene Biotypes") +
+            theme(legend.position="bottom") +
+            theme(legend.key.size = unit(0.6,"line")) +
+            guides(fill=guide_legend(nrow=2,byrow=TRUE))
+
+    plotly.mybar.pct <- ggplotly(mybar.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+    mybar.count <- ggplot(data = pct, aes(x=Sample, y=value, fill=Geneid)) +
+            geom_bar(stat="identity") +
+            scale_fill_manual(values = c(biobloom.palette[1:max.lvl],biobloom.palette[14]), name = "") +
+            theme_bw() +
+            coord_flip() +
+            ylab("Counts") +
+            xlab("") +
+            scale_x_discrete(limits=rev) +
+            theme(plot.title = element_text(face="bold")) +
+            ggtitle("Gene Biotypes") +
+            theme(legend.position="bottom") +
+            theme(legend.key.size = unit(0.6,"line")) +
+            guides(fill=guide_legend(nrow=2,byrow=TRUE))
+
+    plotly.mybar.count <- ggplotly(mybar.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
   }
 }
-colnames(featureCounts)[-1]<-sapply(biotype.files,function(x) gsub(".biotype_counts.txt","",basename(x)))  # Rename columns - split after first "_"
 
-featureCounts <- melt(featureCounts, id.vars = "Geneid", variable.name = "Sample")
-featureCounts <- merge(config_json[, .(Sample = full_name)], featureCounts, by = "Sample")
-
-featureCounts[, perc := round((100*value/sum(value)),2), by=Sample] # compute percentage
-featureCounts[, sum.value := sum(value), by = Sample]
-pct <- featureCounts[perc >=2 ,] # Get abundant features (>= 2%)
-others <- pct[, .(Geneid = "other", value = sum.value - sum(value), perc = round(100-(sum(perc)),2)), by = .(Sample, sum.value)] # Other features - added together to one
-others <- others[, .(Geneid, Sample, value, perc, sum.value)]
-
-pct <- rbind(pct, others)
-
-setorder(pct, Sample, Geneid)
-
-### Plot Pie plot only if one sample
-if(length(unique(pct$Sample)) == 1){
-  #pdf(file=paste0(outpdf), width = 6, height = 6)
-
-  piecolor <- brewer.pal(n = length(pct$Geneid), name = "Set1")
-  pie(pct$perc, labels = paste0(pct$perc,"%"),
-    col = piecolor,
-    main = paste("Pie Chart of Gene Biotypes", pct$Sample[1], pct$sum.value[1], sep="\n"),
-    cex=1)
-  legend("bottomright", pct$Geneid, cex=0.7, fill=piecolor, title = "Biotype")
-
-  #dev.off()
-}else{
-  mybar <- ggplot(data = pct, aes(x=Sample, y=perc, fill=Geneid)) +
-          geom_bar(stat="identity") +
-          scale_fill_brewer(palette = "Set1") +
-          theme_bw() +
-          coord_flip() +
-          scale_y_continuous(name = "Percentages", breaks = seq(0,100,20)) +
-          xlab("") +
-          scale_x_discrete(limits=rev) +
-          theme(plot.title = element_text(face="bold")) +
-          ggtitle("Gene Biotypes") +
-          theme(legend.position="bottom") +
-          theme(legend.key.size = unit(0.6,"line")) +
-          guides(fill=guide_legend(nrow=2,byrow=TRUE))
-  #ggsave(filename = paste0(outpdf), plot = mybar, device = pdf, width = 10, height = 6)
-  plotly.mybar <- ggplotly(mybar) %>% layout(legend = list(orientation = 'h', y=-0.3))
-
-  plotly.mybar
-    }
 ```
 
+`r if(config_json$display_biotypes_RNA[1] == TRUE){"### Biotypes {.tabset}"}`
+`r if(config_json$display_biotypes_RNA[1] == TRUE){"- All the samples captured mainly protein-coding genes (Figure \@ref(fig:biotype))."}`
+`r if(config_json$display_biotypes_RNA[1] == TRUE){"  - This is expected from polyA selection based libraries."}`
+
+`r if(config_json$display_biotypes_RNA[1] == TRUE){paste0("#### Percentages")}`
+```{r plotly-mybar-pct, results='asis', echo=FALSE, fig.cap="Gene biotypes.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$display_biotypes_RNA[1] == TRUE){plotly.mybar.pct}
+```
+
+`r if(config_json$display_biotypes_RNA[1] == TRUE){paste0("#### Counts")}`
+```{r plotly-mybar-count, results='asis', echo=FALSE, fig.cap="Gene biotypes.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
+if(config_json$display_biotypes_RNA[1] == TRUE){plotly.mybar.count}
+```
+
+`r if(config_json$display_biotypes_RNA[1] == TRUE){paste0("### {-}")}`
 
 # Notes and comments
 - We strongly recommend confirming all the events manually in genome/alignment browsers such as IGV, Tablet or Savant.
