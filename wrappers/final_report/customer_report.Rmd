@@ -1229,7 +1229,7 @@ if(config_json$display_biotypes_RNA[1] == TRUE){
 ```
 
 `r if(config_json$display_biotypes_RNA[1] == TRUE){"### Biotypes {.tabset}"}`
-`r if(config_json$display_biotypes_RNA[1] == TRUE){"- All the samples captured mainly protein-coding genes (Figure \@ref(fig:biotype))."}`
+`r if(config_json$display_biotypes_RNA[1] == TRUE){"- All the samples captured mainly protein-coding genes (Figures \\@ref(fig:plotly-mybar-pct) & \\@ref(fig:plotly-mybar-count))."}`
 `r if(config_json$display_biotypes_RNA[1] == TRUE){"  - This is expected from polyA selection based libraries."}`
 
 `r if(config_json$display_biotypes_RNA[1] == TRUE){paste0("#### Percentages")}`
