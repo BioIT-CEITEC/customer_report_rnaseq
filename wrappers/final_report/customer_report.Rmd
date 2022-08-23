@@ -1039,7 +1039,7 @@ if(config_json$kallisto[1] == TRUE){
 
 `r if(config_json$feature_count[1] == TRUE){paste0("- Read count assignment from **featureCounts** for RNA-Seq is ",fc.assign.perc," (between ",fc.assign.min.perc,"% and ",fc.assign.max.perc,"%, calculated only from uniquely mapped reads).")}`
 `r if(config_json$feature_count[1] == TRUE){paste0("  - Number of assigned reads is above limits of the recommended number of reads (~",fc.assign.min,"-",fc.assign.max,"M).")}`
-`r if(config_json$feature_count[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:fc-assign-tab) and Figure \\@ref(fig:plotly-fc-assign-pct) & \\@ref(fig:plotly-fc-assign-count).")}`
+`r if(config_json$feature_count[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:fc-assign-tab) and Figures \\@ref(fig:plotly-fc-assign-pct) to \\@ref(fig:plotly-fc-assign-count).")}`
 
 ```{r tab.id="fc-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - featureCounts.", results='asis', echo=FALSE, ft.split=F}
 if(config_json$feature_count[1] == TRUE){
@@ -1069,7 +1069,7 @@ if(config_json$feature_count[1] == TRUE){plotly.fc.assign.count}
 
 `r if(config_json$RSEM[1] == TRUE){paste0("- Read count assignment from **RSEM** for RNA-Seq is ",rsem.assign.perc," (between ",rsem.assign.min.perc," % and ",rsem.assign.max.perc,"%).")}`
 `r if(config_json$RSEM[1] == TRUE){paste0("  - Number of recommended assigned reads is 25M, we have a number of reads varying between ~",rsem.assign.min,"M and ",rsem.assign.max,"M.")}`
-`r if(config_json$RSEM[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:rsem-assign-tab) and Figure \\@ref(fig:plotly-rsem-assign-count).")}`
+`r if(config_json$RSEM[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:rsem-assign-tab) and Figures \\@ref(fig:plotly-rsem-assign-pct) & \\@ref(fig:plotly-rsem-assign-count).")}`
 
 ```{r tab.id="rsem-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - RSEM.", results='asis', echo=FALSE, ft.split=F}
 if(config_json$RSEM[1] == TRUE){
@@ -1092,7 +1092,7 @@ if(config_json$RSEM[1] == TRUE){plotly.rsem.assign.count}
 
 `r if(config_json$salmon_align[1] == TRUE){paste0("#### Assignment Salmon - alignment mode {.tabset}")}`
 
-`r if(config_json$salmon_align[1] == TRUE){paste0("  - Read assignment from Salmon in alignment mode are summarized in Table \\@ref(tab:salmonA-assign-tab) and Figure \\@ref(fig:plotly-salmonA-assign-count).")}`
+`r if(config_json$salmon_align[1] == TRUE){paste0("  - Read assignment from Salmon in alignment mode are summarized in Table \\@ref(tab:salmonA-assign-tab) and Figures \\@ref(fig:plotly-salmonA-assign-pct) & \\@ref(fig:plotly-salmonA-assign-count).")}`
 
 ```{r tab.id="salmonA-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - Salmon (alignment mode)", results='asis', echo=FALSE, ft.split=F}
 if(config_json$salmon_align[1] == TRUE){
@@ -1115,7 +1115,7 @@ if(config_json$salmon_align[1] == TRUE){plotly.salmonA.assign.count}
 
 `r if(config_json$salmon_map[1] == TRUE){paste0("#### Assignment Salmon - mapping mode {.tabset}")}`
 
-`r if(config_json$salmon_map[1] == TRUE){paste0("  - Read assignment from Salmon in mapping mode are summarized in Table \\@ref(tab:salmonM-assign-tab) and Figure \\@ref(fig:plotly-salmonM-assign-count).")}`
+`r if(config_json$salmon_map[1] == TRUE){paste0("  - Read assignment from Salmon in mapping mode are summarized in Table \\@ref(tab:salmonM-assign-tab) and Figures \\@ref(fig:plotly-salmonM-assign-pct) & \\@ref(fig:plotly-salmonM-assign-count).")}`
 
 ```{r tab.id="salmonM-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - Salmon (mapping mode)", results='asis', echo=FALSE, ft.split=F}
 if(config_json$salmon_map[1] == TRUE){
@@ -1138,7 +1138,7 @@ if(config_json$salmon_map[1] == TRUE){plotly.salmonM.assign.count}
 
 `r if(config_json$kallisto[1] == TRUE){paste0("#### Assignment Kallisto {.tabset}")}`
 
-`r if(config_json$kallisto[1] == TRUE){paste0("  - Read assignment from Kallisto are summarized in Table \\@ref(tab:kallisto-assign-tab) and Figure \\@ref(fig:plotly-kallisto-assign-count).")}`
+`r if(config_json$kallisto[1] == TRUE){paste0("  - Read assignment from Kallisto are summarized in Table \\@ref(tab:kallisto-assign-tab) and Figures \\@ref(fig:plotly-kallisto-assign-pct) & \\@ref(fig:plotly-kallisto-assign-count).")}`
 
 ```{r tab.id="kallisto-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - Kallisto.", results='asis', echo=FALSE, ft.split=F}
 if(config_json$kallisto[1] == TRUE){
