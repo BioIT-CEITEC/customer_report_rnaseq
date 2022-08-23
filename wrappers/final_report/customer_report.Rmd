@@ -1179,7 +1179,7 @@ if(config_json$display_biotypes_RNA[1] == TRUE){
 
   mean.pct <- pct[,.(Mean = mean(percentage)), by=.(Geneid)]
   setorder(mean.pct,-Mean)
-  mean.pct$Geneid <- factor(mean.pct$Geneid, levels=mean.pct$Geneid[order(-mean.pct$Mean)], ordered=TRUE)
+  mean.pct$Geneid <- factor(mean.pct$Geneid, levels=mean.pct$Geneid[order(-mean.pct$Mean)], ordered=F)
   max.lvl <- length(levels(mean.pct$Geneid))
   levels(mean.pct$Geneid)[1+max.lvl]<-"other"
 
@@ -1187,13 +1187,13 @@ if(config_json$display_biotypes_RNA[1] == TRUE){
   others <- others[, .(Geneid, Sample, value, percentage, total)]
 
   pct <- rbind(pct, others)
-  setorder(pct, Sample, -value, Geneid)
+  setorder(pct, Sample, value, Geneid)
   pct$Geneid <- factor(pct$Geneid, levels=levels(mean.pct$Geneid), ordered=TRUE)
 
   ### Plot Pie plot only if one sample
   if(length(unique(pct$Sample)) >= 1){
     mybar.pct <- ggplot(data = pct, aes(x=Sample, y=percentage, fill=Geneid)) +
-            geom_bar(stat="identity") +
+            geom_bar(stat="identity",position = position_stack(reverse = TRUE)) +
             scale_fill_manual(values = c(biobloom.palette[1:max.lvl],biobloom.palette[14]), name = "") +
             theme_bw() +
             coord_flip() +
@@ -1209,7 +1209,7 @@ if(config_json$display_biotypes_RNA[1] == TRUE){
     plotly.mybar.pct <- ggplotly(mybar.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
     mybar.count <- ggplot(data = pct, aes(x=Sample, y=value, fill=Geneid)) +
-            geom_bar(stat="identity") +
+            geom_bar(stat="identity",position = position_stack(reverse = TRUE)) +
             scale_fill_manual(values = c(biobloom.palette[1:max.lvl],biobloom.palette[14]), name = "") +
             theme_bw() +
             coord_flip() +
