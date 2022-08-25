@@ -147,15 +147,15 @@ fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" =
   - Only uniquely mapped and uniquely assigned reads were counted.
 
 - The library preparation kit strand-specificity is: **`r tolower(strandness)`**, and only reads in this strand should be considered.
-- Following checks were performed to estimate the overall sample quality:
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE | config_json$display_picard_RNA[1] == TRUE | config_json$display_RSeQC_RNA[1] == TRUE | config_json$display_biotypes_RNA[1] == TRUE | config_json$display_biobloom[1] == TRUE){"- Following checks were performed to estimate the overall sample quality:"}`
 `r if(config_json$display_fastq_screen_RNA[1] == TRUE){"  - rRNA content estimate (**fastq_screen**)."}`
-  - Read duplication rate (**dupRadar, Picard tools**).
-  - Sequenced (targeted) regions (**RSeQC, Picard tools**).
-  - 5’/3’ coverage bias (**Picard tools**).
-  - Expressed gene biotypes (**featureCounts**).
-  - Library strandness (**RSeQC**).
+`r if(config_json$display_picard_RNA[1] == TRUE){"  - Read duplication rate (**dupRadar, Picard tools**)."}`
+`r if(config_json$display_picard_RNA[1] == TRUE | config_json$display_RSeQC_RNA[1] == TRUE){"  - Sequenced (targeted) regions (**RSeQC, Picard tools**)."}`
+`r if(config_json$display_picard_RNA[1] == TRUE){"  - 5’/3’ coverage bias (**Picard tools**)."}`
+`r if(config_json$display_biotypes_RNA[1] == TRUE){"  - Expressed gene biotypes (**featureCounts**)."}`
+`r if(config_json$display_RSeQC_RNA[1] == TRUE){"  - Library strandness (**RSeQC**)."}`
 `r if(config_json$display_biobloom[1] == TRUE){"  - Contamination check (**Biobloom tools**)."}`
-- Other quality checks are available upon request..
+`r if(config_json$display_fastq_screen_RNA[1] == TRUE | config_json$display_picard_RNA[1] == TRUE | config_json$display_RSeQC_RNA[1] == TRUE | config_json$display_biotypes_RNA[1] == TRUE | config_json$display_biobloom[1] == TRUE){"- Other quality checks are available upon request."}`
 - Complete settings, used commands, tool versions and methodology part for a publication can be provided upon request.
 
 ## Results
@@ -183,7 +183,7 @@ if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
 
 ```
 
-- Initial quality check for analysis did not show presence of adapters (<`r max_adaptor`%), no adapter trimming was performed
+- Initial quality check for analysis `r ifelse(max_adaptor < 1,"did not show","shows")` presence of adapters (~`r max_adaptor`%), `r ifelse(max_adaptor < 1,"no","")` adapter trimming was performed.
 - Other initial quality checks look OK
 
 ### Alignment and splices
@@ -435,304 +435,355 @@ if(config_json$display_biobloom[1] == TRUE){plotly.biobloom.count}
 
 ### Mapped regions
 ```{r rseqc-metrics, echo=FALSE}
-rseqc.metric <- fread(paste0(MQC_DATA,"multiqc_rseqc_read_distribution.txt"))
-rseqc.metric <- merge(config_json[, .(Sample = full_name, condition)], rseqc.metric[, Sample:=gsub(".RSeQC.*","",Sample)], by="Sample")
+if(config_json$display_RSeQC_RNA[1]==TRUE){
+  rseqc.metric <- fread(paste0(MQC_DATA,"multiqc_rseqc_read_distribution.txt"))
+  rseqc.metric <- merge(config_json[, .(Sample = full_name, condition)], rseqc.metric[, Sample:=gsub(".RSeQC.*","",Sample)], by="Sample")
 
-rseqc.count <- names(rseqc.metric)[names(rseqc.metric) %like% "tag_count"]
-rseqc.metric.tbl <- cbind(rseqc.metric[,.(Sample,total_tags)], rseqc.metric[, ..rseqc.count])
-#rseqc.metric.tbl <- rseqc.metric.tbl[, other_intergenic_tag_pct := 100-rowSums(.SD), .SDcols = 2:11]
-rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (true_tss_up_5kb_tag_count = tss_up_5kb_tag_count - tss_up_1kb_tag_count,
-                                             true_tss_up_10kb_tag_count = tss_up_10kb_tag_count - tss_up_5kb_tag_count,
-                                             true_tes_down_5kb_tag_count = tes_down_5kb_tag_count - tes_down_1kb_tag_count,
-                                             true_tes_down_10kb_tag_count = tes_down_10kb_tag_count - tes_down_5kb_tag_count)]
-rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (tss_up_5kb_tag_count = NULL,
-                                             tss_up_10kb_tag_count = NULL,
-                                             tes_down_5kb_tag_count = NULL,
-                                             tes_down_10kb_tag_count = NULL)]
+  rseqc.count <- names(rseqc.metric)[names(rseqc.metric) %like% "tag_count"]
+  rseqc.metric.tbl <- cbind(rseqc.metric[,.(Sample,total_tags)], rseqc.metric[, ..rseqc.count])
+  #rseqc.metric.tbl <- rseqc.metric.tbl[, other_intergenic_tag_pct := 100-rowSums(.SD), .SDcols = 2:11]
+  rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (true_tss_up_5kb_tag_count = tss_up_5kb_tag_count - tss_up_1kb_tag_count,
+                                               true_tss_up_10kb_tag_count = tss_up_10kb_tag_count - tss_up_5kb_tag_count,
+                                               true_tes_down_5kb_tag_count = tes_down_5kb_tag_count - tes_down_1kb_tag_count,
+                                               true_tes_down_10kb_tag_count = tes_down_10kb_tag_count - tes_down_5kb_tag_count)]
+  rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (tss_up_5kb_tag_count = NULL,
+                                               tss_up_10kb_tag_count = NULL,
+                                               tes_down_5kb_tag_count = NULL,
+                                               tes_down_10kb_tag_count = NULL)]
 
-rseqc.metric.tbl <- rseqc.metric.tbl[, "mrna" := (get("cds_exons_tag_count") + get("5_utr_exons_tag_count") + get("3_utr_exons_tag_count")), by="Sample"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[, "mrna" := (get("cds_exons_tag_count") + get("5_utr_exons_tag_count") + get("3_utr_exons_tag_count")), by="Sample"]
 
-names(rseqc.metric.tbl) <- gsub("true_","",names(rseqc.metric.tbl))
-names(rseqc.metric.tbl) <- gsub("_tag_count","",names(rseqc.metric.tbl))
-rseqc.metric.tbl <- melt(rseqc.metric.tbl, id.vars = c("Sample","total_tags"))
-rseqc.metric.tbl <- rseqc.metric.tbl[, percentage:=round(100*value/total_tags,2), by="Sample"]
+  names(rseqc.metric.tbl) <- gsub("true_","",names(rseqc.metric.tbl))
+  names(rseqc.metric.tbl) <- gsub("_tag_count","",names(rseqc.metric.tbl))
+  rseqc.metric.tbl <- melt(rseqc.metric.tbl, id.vars = c("Sample","total_tags"))
+  rseqc.metric.tbl <- rseqc.metric.tbl[, percentage:=round(100*value/total_tags,2), by="Sample"]
 
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "cds_exons", variable := "CDS_Exons"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "5_utr_exons", variable := "5'UTR_Exons"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "3_utr_exons", variable := "3'UTR_Exons"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "introns", variable := "Introns"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tss_up_1kb", variable := "TSS_up_1kb"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tss_up_5kb", variable := "TSS_up_5kb"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tss_up_10kb", variable := "TSS_up_10kb"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tes_down_1kb", variable := "TES_down_1kb"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tes_down_5kb", variable := "TES_down_5kb"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tes_down_10kb", variable := "TES_down_10kb"]
-rseqc.metric.tbl <- rseqc.metric.tbl[variable == "other_intergenic", variable := "Other_intergenic"]
-rseqc.metric.tbl <- rseqc.metric.tbl[,variable := factor(variable, levels = c("CDS_Exons","5'UTR_Exons","3'UTR_Exons","Introns","TSS_up_1kb","TSS_up_5kb","TSS_up_10kb","TES_down_1kb","TES_down_5kb","TES_down_10kb","Other_intergenic","mrna"))]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "cds_exons", variable := "CDS_Exons"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "5_utr_exons", variable := "5'UTR_Exons"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "3_utr_exons", variable := "3'UTR_Exons"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "introns", variable := "Introns"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tss_up_1kb", variable := "TSS_up_1kb"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tss_up_5kb", variable := "TSS_up_5kb"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tss_up_10kb", variable := "TSS_up_10kb"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tes_down_1kb", variable := "TES_down_1kb"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tes_down_5kb", variable := "TES_down_5kb"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "tes_down_10kb", variable := "TES_down_10kb"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[variable == "other_intergenic", variable := "Other_intergenic"]
+  rseqc.metric.tbl <- rseqc.metric.tbl[,variable := factor(variable, levels = c("CDS_Exons","5'UTR_Exons","3'UTR_Exons","Introns","TSS_up_1kb","TSS_up_5kb","TSS_up_10kb","TES_down_1kb","TES_down_5kb","TES_down_10kb","Other_intergenic","mrna"))]
 
-plot.rseqc.metric.pct <- ggplot(rseqc.metric.tbl[variable!="mrna"], aes(Sample, percentage, fill = variable)) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = rseqc.palette, labels = c("CDS_Exons","5'UTR_Exons","3'UTR_Exons","Introns","TSS_up_1kb","TSS_up_5kb","TSS_up_10kb","TES_down_1kb","TES_down_5kb","TES_down_10kb","Other_intergenic"), name = "") +
-  coord_flip() +
-  scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
-  xlab("") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("RSeQC: Read Distribution")
+  plot.rseqc.metric.pct <- ggplot(rseqc.metric.tbl[variable!="mrna"], aes(Sample, percentage, fill = variable)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = rseqc.palette, labels = c("CDS_Exons","5'UTR_Exons","3'UTR_Exons","Introns","TSS_up_1kb","TSS_up_5kb","TSS_up_10kb","TES_down_1kb","TES_down_5kb","TES_down_10kb","Other_intergenic"), name = "") +
+    coord_flip() +
+    scale_y_continuous(name = "Percentages", breaks = seq(0,100,10)) +
+    xlab("") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("RSeQC: Read Distribution")
 
-plotly.rseqc.metric.pct <- ggplotly(plot.rseqc.metric.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.rseqc.metric.pct <- ggplotly(plot.rseqc.metric.pct, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
-plot.rseqc.metric.count <- ggplot(rseqc.metric.tbl[variable!="mrna"], aes(Sample, value, fill = variable)) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = rseqc.palette, labels = c("CDS_Exons","5'UTR_Exons","3'UTR_Exons","Introns","TSS_up_1kb","TSS_up_5kb","TSS_up_10kb","TES_down_1kb","TES_down_5kb","TES_down_10kb","Other_intergenic"), name = "") +
-  coord_flip() +
-  xlab("") +
-  ylab("# Tags") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("RSeQC: Read Distribution")
+  plot.rseqc.metric.count <- ggplot(rseqc.metric.tbl[variable!="mrna"], aes(Sample, value, fill = variable)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = rseqc.palette, labels = c("CDS_Exons","5'UTR_Exons","3'UTR_Exons","Introns","TSS_up_1kb","TSS_up_5kb","TSS_up_10kb","TES_down_1kb","TES_down_5kb","TES_down_10kb","Other_intergenic"), name = "") +
+    coord_flip() +
+    xlab("") +
+    ylab("# Tags") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=3, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("RSeQC: Read Distribution")
 
-plotly.rseqc.metric.count <- ggplotly(plot.rseqc.metric.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.rseqc.metric.count <- ggplotly(plot.rseqc.metric.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
+  rseqc.intron <- rseqc.metric.tbl[variable=="Introns", .(intron=round(mean(percentage),0))]
+  rseqc.mrna <- rseqc.metric.tbl[variable=="mrna", .(mrna=round(mean(percentage),0))]
+
+  if(rseqc.intron$intron >= 40){
+    intron.count <- "very high"
+  }else if(rseqc.intron$intron >= 20 & rseqc.intron$intron < 40){
+    intron.count <- "high"
+  }else if(rseqc.intron$intron >= 10 & rseqc.intron$intron < 20){
+    intron.count <- "moderate"
+  }else if(rseqc.intron$intron >= 5 & rseqc.intron$intron < 10){
+    intron.count <- "low"
+  }else if(rseqc.intron$intron < 5){
+    intron.count <- "very low"
+  }
+
+  if(rseqc.mrna$mrna > 70){
+    coding.count <- "very high"
+  }else if(rseqc.mrna$mrna > 60 & rseqc.mrna$mrna <= 70){
+    coding.count <- "high"
+  }else if(rseqc.mrna$mrna > 40 & rseqc.mrna$mrna <= 60){
+    coding.count <- "moderate"
+  }else if(rseqc.mrna$mrna > 20 & rseqc.mrna$mrna <= 40){
+    coding.count <- "low"
+  }else if(rseqc.mrna$mrna <= 20){
+    coding.count <- "very low"
+  }
+
+}
 ```
 
 
 ```{r picard-metrics, echo=FALSE}
-picard.metric <- fread(paste0(MQC_DATA,"multiqc_picard_RnaSeqMetrics.txt"))
-picard.metric <- merge(config_json[, .(Sample = full_name, condition)], picard.metric, by="Sample")
+if(config_json$display_picard_RNA[1]==TRUE){
+  picard.metric <- fread(paste0(MQC_DATA,"multiqc_picard_RnaSeqMetrics.txt"))
+  picard.metric <- merge(config_json[, .(Sample = full_name, condition)], picard.metric, by="Sample")
 
-picard.metric.tbl <- picard.metric[, .(Sample, PF_BASES, PF_ALIGNED_BASES, Coding = CODING_BASES, UTR = UTR_BASES, Intronic = INTRONIC_BASES, Intergenic = INTERGENIC_BASES, not_aligned = PF_NOT_ALIGNED_BASES)]
-picard.metric.tbl <- picard.metric.tbl[, "mrna" := (Coding + UTR), by="Sample"]
-picard.metric.tbl <- melt(picard.metric.tbl, id.vars = c("Sample","PF_BASES","PF_ALIGNED_BASES"))
-picard.metric.tbl <- picard.metric.tbl[, percentage := round(100*value/PF_BASES,2), by="Sample"]
-picard.metric.tbl <- picard.metric.tbl[variable!="not_aligned", pct_aligned := round(100*value/PF_ALIGNED_BASES,2), by="Sample"]
-picard.metric.tbl <- picard.metric.tbl[, variable := factor(variable, levels = c("Coding","UTR","Intronic","Intergenic","not_aligned","mrna"))]
+  picard.metric.tbl <- picard.metric[, .(Sample, PF_BASES, PF_ALIGNED_BASES, Coding = CODING_BASES, UTR = UTR_BASES, Intronic = INTRONIC_BASES, Intergenic = INTERGENIC_BASES, not_aligned = PF_NOT_ALIGNED_BASES)]
+  picard.metric.tbl <- picard.metric.tbl[, "mrna" := (Coding + UTR), by="Sample"]
+  picard.metric.tbl <- melt(picard.metric.tbl, id.vars = c("Sample","PF_BASES","PF_ALIGNED_BASES"))
+  picard.metric.tbl <- picard.metric.tbl[, percentage := round(100*value/PF_BASES,2), by="Sample"]
+  picard.metric.tbl <- picard.metric.tbl[variable!="not_aligned", pct_aligned := round(100*value/PF_ALIGNED_BASES,2), by="Sample"]
+  picard.metric.tbl <- picard.metric.tbl[, variable := factor(variable, levels = c("Coding","UTR","Intronic","Intergenic","not_aligned","mrna"))]
 
-plot.picard.metric.count <- ggplot(picard.metric.tbl[variable!="mrna",], aes(Sample, value, fill = variable)) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = rseqc.palette, labels = c("Coding","UTR","Intronic","Intergenic","PF not aligned"), name = "") +
-  coord_flip() +
-  xlab("") +
-  ylab("Number of reads") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("Picard: RnaSeqMetrics Read Assignments")
+  plot.picard.metric.count <- ggplot(picard.metric.tbl[variable!="mrna",], aes(Sample, value, fill = variable)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = rseqc.palette, labels = c("Coding","UTR","Intronic","Intergenic","PF not aligned"), name = "") +
+    coord_flip() +
+    xlab("") +
+    ylab("Number of reads") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Picard: RnaSeqMetrics Read Assignments")
 
-plotly.picard.metric.count <- ggplotly(plot.picard.metric.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.picard.metric.count <- ggplotly(plot.picard.metric.count, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
-plot.picard.metric.perc <- ggplot(picard.metric.tbl[variable!="mrna",], aes(Sample, percentage, fill = variable)) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = rseqc.palette, labels = c("Coding","UTR","Intronic","Intergenic","PF not aligned"), name = "") +
-  coord_flip() +
-  scale_y_continuous(name = "Percentages (over all bases)", breaks = seq(0,100,10)) +
-  xlab("") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("Picard: RnaSeqMetrics Read Assignments")
+  plot.picard.metric.perc <- ggplot(picard.metric.tbl[variable!="mrna",], aes(Sample, percentage, fill = variable)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = rseqc.palette, labels = c("Coding","UTR","Intronic","Intergenic","PF not aligned"), name = "") +
+    coord_flip() +
+    scale_y_continuous(name = "Percentages (over all bases)", breaks = seq(0,100,10)) +
+    xlab("") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Picard: RnaSeqMetrics Read Assignments")
 
-plotly.picard.metric.perc <- ggplotly(plot.picard.metric.perc, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.picard.metric.perc <- ggplotly(plot.picard.metric.perc, tooltip = "percentage") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
-plot.picard.metric.perc.align <- ggplot(picard.metric.tbl[variable!="mrna" & variable!="not_aligned",], aes(Sample, pct_aligned, fill = variable)) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = rseqc.palette, labels = c("Coding","UTR","Intronic","Intergenic"), name = "") +
-  coord_flip() +
-  scale_y_continuous(name = "Percentages (over aligned bases)", breaks = seq(0,100,10)) +
-  xlab("") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("Picard: RnaSeqMetrics Read Assignments")
+  plot.picard.metric.perc.align <- ggplot(picard.metric.tbl[variable!="mrna" & variable!="not_aligned",], aes(Sample, pct_aligned, fill = variable)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = rseqc.palette, labels = c("Coding","UTR","Intronic","Intergenic"), name = "") +
+    coord_flip() +
+    scale_y_continuous(name = "Percentages (over aligned bases)", breaks = seq(0,100,10)) +
+    xlab("") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Picard: RnaSeqMetrics Read Assignments")
 
-plotly.picard.metric.perc.align <- ggplotly(plot.picard.metric.perc.align, tooltip = "pct_aligned") %>% layout(legend = list(orientation = 'h', y=-0.3))
+  plotly.picard.metric.perc.align <- ggplotly(plot.picard.metric.perc.align, tooltip = "pct_aligned") %>% layout(legend = list(orientation = 'h', y=-0.3))
 
+  picard.intron <- picard.metric.tbl[variable=="Intronic", .(intron=round(mean(percentage),0))]
+  picard.intron.aligned <- picard.metric.tbl[variable=="Intronic", .(intron=round(mean(pct_aligned),0))]
+  picard.mrna <- picard.metric.tbl[variable=="mrna", .(mrna=round(mean(percentage),0))]
+  picard.mrna.aligned <- picard.metric.tbl[variable=="mrna", .(mrna=round(mean(pct_aligned),0))]
+
+  if(config_json$display_RSeQC_RNA==FALSE){
+    if(picard.intron$intron >= 40){
+      intron.count <- "very high"
+    }else if(picard.intron$intron >= 20 & picard.intron$intron < 40){
+      intron.count <- "high"
+    }else if(picard.intron$intron >= 10 & picard.intron$intron < 20){
+      intron.count <- "moderate"
+    }else if(picard.intron$intron >= 5 & picard.intron$intron < 10){
+      intron.count <- "low"
+    }else if(picard.intron$intron < 5){
+      intron.count <- "very low"
+    }
+
+    if(picard.mrna$mrna > 70){
+      coding.count <- "very high"
+    }else if(picard.mrna$mrna > 60 & picard.mrna$mrna <= 70){
+      coding.count <- "high"
+    }else if(picard.mrna$mrna > 40 & picard.mrna$mrna <= 60){
+      coding.count <- "moderate"
+    }else if(picard.mrna$mrna > 20 & picard.mrna$mrna <= 40){
+      coding.count <- "low"
+    }else if(picard.mrna$mrna <= 20){
+      coding.count <- "very low"
+    }
+  }
+
+}
+```
+
+```{r intron-expectation, echo=FALSE}
+if(config_json$display_RSeQC_RNA[1]==TRUE | config_json$display_picard_RNA[1]==TRUE){
+  if(config_json$type_of_extraction[1]=="PolyA" & coding.count %in% c("low","very low")){
+    coding.expect<-"unexpected"
+  }else if(config_json$type_of_extraction[1]=="PolyA" & coding.count %in% c("moderate","high","very high")){
+    coding.expect<-"expected"
+  }else if(config_json$type_of_extraction[1]=="rRNA" & coding.count %in% c("low","very low")){
+    coding.expect<-"unexpected"
+  }else if(config_json$type_of_extraction[1]=="rRNA" & coding.count %in% c("moderate","high","very high")){
+    coding.expect<-"expected"
+  }
+}
 ```
 
 
-```{r mrna-intron, echo=FALSE}
-picard.intron <- picard.metric.tbl[variable=="Intronic", .(intron=round(mean(percentage),0))]
-picard.intron.aligned <- picard.metric.tbl[variable=="Intronic", .(intron=round(mean(pct_aligned),0))]
-rseqc.intron <- rseqc.metric.tbl[variable=="Introns", .(intron=round(mean(percentage),0))]
+`r if(config_json$display_RSeQC_RNA[1]==TRUE | config_json$display_picard_RNA[1]==TRUE){"- Evaluation of the mapped genomic regions is very comparable"}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE | config_json$display_picard_RNA[1]==TRUE){paste0("- All samples had a ",intron.count," content of intronic reads")}`
+`r if(config_json$display_picard_RNA[1]==TRUE){paste0("  - About ",picard.intron.aligned$intron,"% counted over aligned bases.")}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("  - About ",rseqc.intron$intron,"% counted over reads.")}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE | config_json$display_picard_RNA[1]==TRUE){paste0("- All samples had a ",coding.count," content of mapped reads within coding regions, which is ",coding.expect," for ",config_json$type_of_extraction[1]," selection library protocols.")}`
+`r if(config_json$display_picard_RNA[1]==TRUE){paste0("  - About ",picard.mrna.aligned$mrna,"% counted over bases (Figures \\@ref(fig:picard-map-loc-pct-align) & \\@ref(fig:picard-map-loc-pct) & \\@ref(fig:picard-map-loc-count)).")}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("  - About ",rseqc.mrna$mrna,"% counted over reads (Figures \\@ref(fig:rseqc-map-loc-pct) & \\@ref(fig:rseqc-map-loc-count)).")}`
 
-picard.mrna <- picard.metric.tbl[variable=="mrna", .(mrna=round(mean(percentage),0))]
-picard.mrna.aligned <- picard.metric.tbl[variable=="mrna", .(mrna=round(mean(pct_aligned),0))]
-rseqc.mrna <- rseqc.metric.tbl[variable=="mrna", .(mrna=round(mean(percentage),0))]
+`r if(config_json$display_picard_RNA[1]==TRUE){paste0("#### Picard metrics {.tabset}")}`
 
-if(rseqc.intron$intron >= 40){
-  intron.count <- "very high"
-}else if(rseqc.intron$intron >= 20 & rseqc.intron$intron < 40){
-  intron.count <- "high"
-}else if(rseqc.intron$intron >= 10 & rseqc.intron$intron < 20){
-  intron.count <- "moderate"
-}else if(rseqc.intron$intron >= 5 & rseqc.intron$intron < 10){
-  intron.count <- "low"
-}else if(rseqc.intron$intron < 5){
-  intron.count <- "very low"
-}
-
-if(rseqc.mrna$mrna > 70){
-  coding.count <- "very high"
-}else if(rseqc.mrna$mrna > 60 & rseqc.mrna$mrna <= 70){
-  coding.count <- "high"
-}else if(rseqc.mrna$mrna > 40 & rseqc.mrna$mrna <= 60){
-  coding.count <- "moderate"
-}else if(rseqc.mrna$mrna > 20 & rseqc.mrna$mrna <= 40){
-  coding.count <- "low"
-}else if(rseqc.mrna$mrna <= 20){
-  coding.count <- "very low"
-}
-
-```
-
-- Evaluation of the mapped genomic regions is very comparable
-- All samples had a `r intron.count` content of intronic reads ~`r picard.intron.aligned$intron`% counted over aligned bases as well as ~`r rseqc.intron$intron`% counted over reads which is expected for polyA selection library protocols
-- All samples had a `r coding.count` content of mapped reads within coding regions ~`r picard.mrna.aligned$mrna`% counted over bases as well as ~`r rseqc.mrna$mrna`% counted over reads (Figure \@ref(fig:picard-map-loc-pct-align) & \@ref(fig:picard-map-loc-pct) & \@ref(fig:picard-map-loc-count) and \@ref(fig:rseqc-map-loc-pct) & \@ref(fig:rseqc-map-loc-count)).
-
-#### Picard metrics {.tabset}
-
-##### Percentages (over aligned bases)
+`r if(config_json$display_picard_RNA[1]==TRUE){paste0("##### Percentages (over aligned bases)")}`
 ```{r picard-map-loc-pct-align, results='asis', echo=FALSE, fig.cap="Mapped locations (Picard; in bases).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plotly.picard.metric.perc.align
+if(config_json$display_picard_RNA[1]==TRUE){plotly.picard.metric.perc.align}
+
 ```
 
-##### Percentages (over all bases)
+`r if(config_json$display_picard_RNA[1]==TRUE){paste0("##### Percentages (over all bases)")}`
 ```{r picard-map-loc-pct, results='asis', echo=FALSE, fig.cap="Mapped locations (Picard; in bases).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plotly.picard.metric.perc
+if(config_json$display_picard_RNA[1]==TRUE){plotly.picard.metric.perc}
 ```
 
-##### Counts
+`r if(config_json$display_picard_RNA[1]==TRUE){paste0("##### Counts")}`
 ```{r picard-map-loc-count, results='asis', echo=FALSE, fig.cap="Mapped locations (Picard; in bases).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plotly.picard.metric.count
+if(config_json$display_picard_RNA[1]==TRUE){plotly.picard.metric.count}
 ```
 
-#### {-}
+`r if(config_json$display_picard_RNA[1]==TRUE){paste0("#### {-}")}`
 
-#### RSeQC metrics {.tabset}
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("#### RSeQC metrics {.tabset}")}`
 
-##### Percentages
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("##### Percentages")}`
 ```{r rseqc-map-loc-pct, results='asis', echo=FALSE, fig.cap="Mapped locations (RSeQC; in reads).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plotly.rseqc.metric.pct
+if(config_json$display_RSeQC_RNA[1]==TRUE){plotly.rseqc.metric.pct}
 ```
 
-##### Number of Tags
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("##### Number of Tags")}`
 ```{r rseqc-map-loc-count, results='asis', echo=FALSE, fig.cap="Mapped locations (RSeQC; in reads).", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plotly.rseqc.metric.count
+if(config_json$display_RSeQC_RNA[1]==TRUE){plotly.rseqc.metric.count}
 ```
 
-#### {-}
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("#### {-}")}`
 
-### Read coverage distribution
-- The gene body coverage is very similar in all the samples.
-`r if(rna_type == "classic_rev"){"  - Coverage across the gene is very even and shows very good coverage across whole genes "}else if(rna_type == "quant_fwd"){"  - Coverage across the gene is very good and shows the characteristic accumulation in 3'end of the genes in all the samples, which is typical from the library preparation using QuantSeq "}``r paste0("(Figure \\@ref(fig:picard-cov)).")`
+
+
+`r if(config_json$display_picard_RNA[1]==TRUE){"### Read coverage distribution"}`
+`r if(config_json$display_picard_RNA[1]==TRUE){"- The gene body coverage is very similar in all the samples."}`
+`r if(config_json$display_picard_RNA[1]==TRUE){if(rna_type == "classic_rev"){"  - Coverage across the gene is very even and shows very good coverage across whole genes "}else if(rna_type == "quant_fwd"){"  - Coverage across the gene is very good and shows the characteristic accumulation in 3'end of the genes in all the samples, which is typical from the library preparation using QuantSeq "}}`
+`r if(config_json$display_picard_RNA[1]==TRUE){paste0("(Figure \\@ref(fig:picard-cov)).")}`
 
 ```{r picard-cov, results='asis', echo=FALSE, fig.cap="Gene body mapping distribution.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = default_height}
-# gene_cov <- load_multiqc(
-#   paste0(MQC_DATA,"multiqc_data.json"),
-#   sections = "plots",
-#   plot_opts = list(picard_rna_coverage = list(
-#     extractor = extract_xy,
-#     summary = list(
-#       df=list
-#     )
-#   ))
-# )
-gene_cov<-load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'picard_rna_coverage')
-# gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage.df))
-gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage))
-setnames(gene_cov, "metadata.sample_id","Sample")
+if(config_json$display_picard_RNA[1]==TRUE){
+  # gene_cov <- load_multiqc(
+  #   paste0(MQC_DATA,"multiqc_data.json"),
+  #   sections = "plots",
+  #   plot_opts = list(picard_rna_coverage = list(
+  #     extractor = extract_xy,
+  #     summary = list(
+  #       df=list
+  #     )
+  #   ))
+  # )
+  gene_cov<-load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'picard_rna_coverage')
+  # gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage.df))
+  gene_cov <- as.data.table(gene_cov %>% unnest(plot.picard_rna_coverage))
+  setnames(gene_cov, "metadata.sample_id","Sample")
 
-gene_cov <- merge(config_json[, .(Sample = full_name)], gene_cov, by="Sample")
-gene_cov <- gene_cov[, Sample := as.factor(Sample)]
+  gene_cov <- merge(config_json[, .(Sample = full_name)], gene_cov, by="Sample")
+  gene_cov <- gene_cov[, Sample := as.factor(Sample)]
 
-coul <- c(rseqc.palette,rseqc.palette)
-if(length(unique(gene_cov$Sample)) > length(coul)){
-  coul <- colorRampPalette(coul)(length(unique(gene_cov$Sample)))
+  coul <- c(rseqc.palette,rseqc.palette)
+  if(length(unique(gene_cov$Sample)) > length(coul)){
+    coul <- colorRampPalette(coul)(length(unique(gene_cov$Sample)))
+  }
+
+  plot.gene.cov <- ggplot(gene_cov, aes(x, y, colour = Sample)) +
+    geom_line() +
+    scale_colour_manual(values = coul, name = "") +
+    ylab("Coverage") +
+    scale_x_continuous(name = "Percent through gene", breaks = seq(0,100,10)) +
+    theme_bw() +
+    theme(legend.position="none") +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("Picard: Normalized Gene Coverage")
+
+  plotly.gene.cov <- ggplotly(plot.gene.cov) %>% layout(legend = list(orientation = 'h', y=-0.3))
+
+  plotly.gene.cov
 }
-
-plot.gene.cov <- ggplot(gene_cov, aes(x, y, colour = Sample)) +
-  geom_line() +
-  scale_colour_manual(values = coul, name = "") +
-  ylab("Coverage") +
-  scale_x_continuous(name = "Percent through gene", breaks = seq(0,100,10)) +
-  theme_bw() +
-  theme(legend.position="none") +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("Picard: Normalized Gene Coverage")
-
-plotly.gene.cov <- ggplotly(plot.gene.cov) %>% layout(legend = list(orientation = 'h', y=-0.3))
-
-plotly.gene.cov
-
 ```
 
 
-### Strand specificity
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){"### Strand specificity"}`
 ```{r rseqc-strand, echo=FALSE}
-rseqc.infer.exp <- fread(paste0(MQC_DATA,"multiqc_rseqc_infer_experiment.txt"))
-rseqc.infer.exp <- rseqc.infer.exp[,Sample := gsub(".RSeQC.*","",Sample)]
-rseqc.infer.exp <- merge(config_json[, .(Sample = full_name, condition)], rseqc.infer.exp, by="Sample")
-setorder(rseqc.infer.exp, condition, Sample)
+if(config_json$display_RSeQC_RNA[1]==TRUE){
+  rseqc.infer.exp <- fread(paste0(MQC_DATA,"multiqc_rseqc_infer_experiment.txt"))
+  rseqc.infer.exp <- rseqc.infer.exp[,Sample := gsub(".RSeQC.*","",Sample)]
+  rseqc.infer.exp <- merge(config_json[, .(Sample = full_name, condition)], rseqc.infer.exp, by="Sample")
+  setorder(rseqc.infer.exp, condition, Sample)
 
-rseqc.infer.exp <- melt(rseqc.infer.exp, id.vars = c("Sample","condition"))
-rseqc.infer.exp <- rseqc.infer.exp[, value := 100*value]
-rseqc.infer.exp <- rseqc.infer.exp[variable %like% "e_sense", variable:="Sense"]
-rseqc.infer.exp <- rseqc.infer.exp[variable %like% "e_antisense", variable:="Antisense"]
-rseqc.infer.exp <- rseqc.infer.exp[variable == "failed", variable:="Undetermined"]
-rseqc.infer.exp <- rseqc.infer.exp[, variable := factor(variable, levels = c("Sense", "Antisense", "Undetermined"))]
+  rseqc.infer.exp <- melt(rseqc.infer.exp, id.vars = c("Sample","condition"))
+  rseqc.infer.exp <- rseqc.infer.exp[, value := 100*value]
+  rseqc.infer.exp <- rseqc.infer.exp[variable %like% "e_sense", variable:="Sense"]
+  rseqc.infer.exp <- rseqc.infer.exp[variable %like% "e_antisense", variable:="Antisense"]
+  rseqc.infer.exp <- rseqc.infer.exp[variable == "failed", variable:="Undetermined"]
+  rseqc.infer.exp <- rseqc.infer.exp[, variable := factor(variable, levels = c("Sense", "Antisense", "Undetermined"))]
 
-rseqc.strand.spec <- rseqc.infer.exp[, .(mean = round(mean(value),0)), by="variable"]
+  rseqc.strand.spec <- rseqc.infer.exp[, .(mean = round(mean(value),0)), by="variable"]
 
-if(rseqc.strand.spec[variable == "Antisense", mean] >= 70){strandness.found <- "Reverse"}
-if(rseqc.strand.spec[variable == "Antisense", mean] < 30){strandness.found <- "Forward"}
-if(rseqc.strand.spec[variable == "Antisense", mean] >= 30 & rseqc.strand.spec[variable == "Antisense", mean] < 70){strandness.found <- "Unstranded"}
+  if(rseqc.strand.spec[variable == "Antisense", mean] >= 70){strandness.found <- "Reverse"}
+  if(rseqc.strand.spec[variable == "Antisense", mean] < 30){strandness.found <- "Forward"}
+  if(rseqc.strand.spec[variable == "Antisense", mean] >= 30 & rseqc.strand.spec[variable == "Antisense", mean] < 70){strandness.found <- "Unstranded"}
 
-plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variable)) +
-  geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
-  scale_fill_manual(values = rseqc.palette, labels = c("Sense", "Antisense", "Undetermined"), name = "") +
-  coord_flip() +
-  #scale_y_continuous(labels = scales::percent, name = "% Tags", breaks = c(0,0.2,0.4,0.6,0.8,1)) +
-  scale_y_continuous(name = "% Tags", breaks = seq(0,100,10)) +
-  xlab("") +
-  scale_x_discrete(limits=rev) +
-  theme_bw() +
-  theme(legend.position="bottom") +
-  theme(legend.key.size = unit(0.6,"line")) +
-  theme(plot.title = element_text(face="bold")) +
-  ggtitle("RSeQC: Infer experiment")
+  plot.rseqc.infer.exp <- ggplot(rseqc.infer.exp, aes(Sample, value, fill = variable)) +
+    geom_bar(stat = "identity" , width = 0.8, position = position_stack(reverse = TRUE)) +
+    scale_fill_manual(values = rseqc.palette, labels = c("Sense", "Antisense", "Undetermined"), name = "") +
+    coord_flip() +
+    #scale_y_continuous(labels = scales::percent, name = "% Tags", breaks = c(0,0.2,0.4,0.6,0.8,1)) +
+    scale_y_continuous(name = "% Tags", breaks = seq(0,100,10)) +
+    xlab("") +
+    scale_x_discrete(limits=rev) +
+    theme_bw() +
+    theme(legend.position="bottom") +
+    theme(legend.key.size = unit(0.6,"line")) +
+    theme(plot.title = element_text(face="bold")) +
+    ggtitle("RSeQC: Infer experiment")
 
-plotly.rseqc.infer.exp <- ggplotly(plot.rseqc.infer.exp, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
-
+  plotly.rseqc.infer.exp <- ggplotly(plot.rseqc.infer.exp, tooltip = "value") %>% layout(legend = list(orientation = 'h', y=-0.3))
+}
 ```
 
-- According to the preparation kit reads should be `r if(strandness == "Forward"){"in the forward strand."}else if(strandness == "Reverse"){"in the reverse strand."}else if(strandness == "Unstranded"){"unstranded."}`
-- The analysis shows the strand-specificity of each library, but cannot be trusted with full confidence.
-  - All the samples have ~`r rseqc.strand.spec[variable == "Sense", mean]`% of the forward-strand specificity, ~`r rseqc.strand.spec[variable == "Antisense", mean]`% of the reverse-strand specificity but ~`r rseqc.strand.spec[variable == "Undetermined", mean]`% mappings cannot be determined.
-    - The latest are usually mappings to intergenic regions, unannotated regions or regions where two genes overlap at the same strand (`r paste0("Figure \\@ref(fig:rseqc-exp)")`).
-  - We consider mapping as `r tolower(strandness.found)`, as we got the highest number of suitable reads for DE analysis.
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("- According to the preparation kit reads should be ",if(strandness == 'Forward'){'in the forward strand.'}else if(strandness == 'Reverse'){'in the reverse strand.'}else if(strandness == 'Unstranded'){'unstranded.'})}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("- The analysis shows the strand-specificity of each library, but cannot be trusted with full confidence.")}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("  - All the samples have ~",rseqc.strand.spec[variable == 'Sense',]$mean,"% of the forward-strand specificity, ~",rseqc.strand.spec[variable == 'Antisense',]$mean,"% of the reverse-strand specificity but ~",rseqc.strand.spec[variable == 'Undetermined',]$read,"% mappings cannot be determined.")}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("    - The latest are usually mappings to intergenic regions, unannotated regions or regions where two genes overlap at the same strand (Figure \\@ref(fig:rseqc-exp) ).")}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("  - We consider mapping as ",tolower(strandness.found)," as we got the highest number of suitable reads for DE analysis.")}`
 
 ```{r rseqc-exp, results='asis', echo=FALSE, fig.cap="Library strand specificity.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-plotly.rseqc.infer.exp
+if(config_json$display_RSeQC_RNA[1]==TRUE){plotly.rseqc.infer.exp}
 ```
 
-### Read count assignment to genes
+`r if(config_json$RSEM[1] == TRUE | config_json$feature_count[1] == TRUE | config_json$salmon_align[1] == TRUE | config_json$salmon_map[1] == TRUE | config_json$kallisto[1] == TRUE){"### Read count assignment to genes"}`
 ```{r map-assign, echo=FALSE}
 if(config_json$RSEM[1] == TRUE){
   rsem.assign <- fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
