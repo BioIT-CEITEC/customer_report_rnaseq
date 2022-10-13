@@ -1640,7 +1640,7 @@ no_null<-top.de.plots(comparison, analysis_type, DE)
 - Results are organized by compared conditions
   - The compared conditions are always stated in the name of the folder
   - All the results in the corresponding folder are based on the currently compared conditions but in some of the cases other samples and conditions are added to the visualization/summaries as well
-  - For example: **cond1_vs_cond2** compares cond1 to cond2. In the DE results then - positive log2FC signalizes more expression in cond1 (or less in cond2) and negative log2FC signalizes less expression in cond2 (or more in cond1).
+  - For example: **cond1_vs_cond2** compares cond1 to cond2. In the DE results then - positive log2FC signalizes more expression in cond1 (or less in cond2) and negative log2FC signalizes less expression in cond1 (or more in cond2).
 - Main output files are **DESeq2.tsv**, **DESeq2_noIndFilt.tsv**, and **edgeR.tsv**
 - All three main results contain several columns:
   - **first column (no name)** - Ensembl gene id
