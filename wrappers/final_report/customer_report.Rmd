@@ -599,7 +599,7 @@ if(config_json$display_picard_RNA[1]==TRUE){
   picard.mrna <- picard.metric.tbl[variable=="mrna", .(mrna=round(mean(percentage),0))]
   picard.mrna.aligned <- picard.metric.tbl[variable=="mrna", .(mrna=round(mean(pct_aligned),0))]
 
-  if(config_json$display_RSeQC_RNA==FALSE){
+  if(config_json$display_RSeQC_RNA[1]==FALSE){
     if(picard.intron$intron >= 40){
       intron.count <- "very high"
     }else if(picard.intron$intron >= 20 & picard.intron$intron < 40){
