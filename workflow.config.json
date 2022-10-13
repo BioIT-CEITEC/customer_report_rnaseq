@@ -27,7 +27,6 @@
     "feature_count",
     "RSEM",
     "kallisto",
-    "salmon",
     "salmon_align",
     "salmon_map",
     "biobloom",

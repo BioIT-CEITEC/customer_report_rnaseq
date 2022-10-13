@@ -37,11 +37,10 @@ if config["feature_count"]:
     analysis.append("feature_count")
 if config["RSEM"]:
     analysis.append("RSEM")
-if config["salmon"]:
-    if config["salmon_align"]:
-        analysis.append("salmon_aln")
-    if config["salmon_map"]:
-        analysis.append("salmon_map")
+if config["salmon_align"]:
+    analysis.append("salmon_aln")
+if config["salmon_map"]:
+    analysis.append("salmon_map")
 if config["kallisto"]:
     analysis.append("kallisto")
 
