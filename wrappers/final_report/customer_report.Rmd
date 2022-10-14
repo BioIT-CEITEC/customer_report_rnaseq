@@ -1042,10 +1042,11 @@ if(config_json$salmon_align[1] == TRUE){
 
 if(config_json$kallisto[1] == TRUE){
   kallisto.assign <- fread(paste0(MQC_DATA,"multiqc_kallisto.txt"))
+  kallisto.assign <- kallisto.assign[, Sample := gsub("_R1$","",Sample)]
   kallisto.assign <- merge(config_json[, .(Sample = full_name, condition)], kallisto.assign, by="Sample")
   setorder(kallisto.assign, condition, Sample)
 
-  kallisto.assign <- melt(kallisto.assign[, percent_aligned:=NULL], id.vars = c("Sample","condition","total_reads"))
+  kallisto.assign <- melt(kallisto.assign[, `:=` (percent_aligned=NULL,fragment_length=NULL)], id.vars = c("Sample","condition","total_reads"))
   kallisto.assign <- kallisto.assign[, percentage := round(100*value/total_reads, 2), by = "Sample"]
   kallisto.assign <- kallisto.assign[, label:=variable]
   levels(kallisto.assign$label) <- c("Pseudoaligned","Not aligned")
