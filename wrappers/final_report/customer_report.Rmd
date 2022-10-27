@@ -168,11 +168,15 @@ if(file.exists(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"))){
  adaptor_max <- fread(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"), header=T)
  adaptor_max <- melt(adaptor_max, id.vars = c("Sample"), value.name = "plot.adaptor.max")
 }else{
- # adaptor_max <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = c('plots'), plot_opts = list(fastqc_adapter_content_plot= list(extractor = extract_ignore_x, summary = list(max = max), prefix = "adaptor"))) # tidymultiqc v0.1.0
+ #adaptor_max <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = c('plots'), plot_opts = list(fastqc_adapter_content_plot= list(extractor = extract_ignore_x, summary = list(max = max), prefix = "adaptor"))) # tidymultiqc v0.1.0
  adaptor_plot <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'fastqc_adapter_content_plot')
- adaptor_max <- adaptor_plot %>% tidyr::unnest(cols = plot.fastqc_adapter_content_plot) %>%
-        dplyr::group_by(metadata.sample_id) %>%
-        dplyr::summarise(plot.adaptor.max = max(y))
+ if(length(adaptor_plot)>0){
+    adaptor_max <- adaptor_plot %>% tidyr::unnest(cols = plot.fastqc_adapter_content_plot) %>%
+         dplyr::group_by(metadata.sample_id) %>%
+         dplyr::summarise(plot.adaptor.max = max(y))
+ }else{
+   adaptor_max <- NULL
+ }
 }
 
 if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
