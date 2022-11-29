@@ -291,7 +291,7 @@ for(i in 1:length(star.labcol.count$variable)){
 
 - The `r paired` reads were aligned to `r species` reference genome with the help of the gene annotation (`r reference`) using STAR aligner.
 - The percentage of uniquely- and multi-mapped reads are `r map.perc` for all samples (~`r map.mean.perc`% with ~`r uni.map.mean.perc`% of uniquely-mapped and ~`r multi.map.mean.perc`% of multi-mapped),
-and the number of mapped reads varies between ~`r map.min`M for `r tabl_mapread[mapped == min(mapped),]$Sample` and ~`r map.max`M for `r tabl_mapread[mapped == max(mapped),]$Sample` (Table \@ref(tab:tabl-mapread), Figure \@ref(fig:star-map-perc) & \@ref(fig:star-map-count)).
+and the total number of mapped reads varies between ~`r map.min`M for `r tabl_mapread[mapped == min(mapped),]$Sample` and ~`r map.max`M for `r tabl_mapread[mapped == max(mapped),]$Sample` (Table \@ref(tab:tabl-mapread), Figure \@ref(fig:star-map-perc) & \@ref(fig:star-map-count)).
 
 ```{r tab.id="tabl-mapread", tab.cap="Number and percentage of uniquely- and multi-mapped reads", results='asis', echo=FALSE, out.width="80%", ft.split=F}
 fit_to_width(autofit(qflextable(tabl_mapread[,.(Sample, condition, "uniquely mapped" = uniquely_mapped, "uniquely mapped (%)" = uniquely_mapped_percent, multimapped, "multimapped (%)" = multimapped_percent)])),max_width = 9.1)
