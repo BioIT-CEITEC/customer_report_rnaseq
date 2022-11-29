@@ -779,7 +779,7 @@ if(config_json$display_RSeQC_RNA[1]==TRUE){
 
 `r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("- According to the preparation kit reads should be ",if(strandness == 'Forward'){'in the forward strand.'}else if(strandness == 'Reverse'){'in the reverse strand.'}else if(strandness == 'Unstranded'){'unstranded.'})}`
 `r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("- The analysis shows the strand-specificity of each library, but cannot be trusted with full confidence.")}`
-`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("  - All the samples have ~",rseqc.strand.spec[variable == 'Sense',]$mean,"% of the forward-strand specificity, ~",rseqc.strand.spec[variable == 'Antisense',]$mean,"% of the reverse-strand specificity but ~",rseqc.strand.spec[variable == 'Undetermined',]$read,"% mappings cannot be determined.")}`
+`r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("  - All the samples have ~",rseqc.strand.spec[variable == 'Sense',]$mean,"% of the forward-strand specificity, ~",rseqc.strand.spec[variable == 'Antisense',]$mean,"% of the reverse-strand specificity but ~",rseqc.strand.spec[variable == 'Undetermined',]$mean,"% mappings cannot be determined.")}`
 `r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("    - The latest are usually mappings to intergenic regions, unannotated regions or regions where two genes overlap at the same strand (Figure \\@ref(fig:rseqc-exp) ).")}`
 `r if(config_json$display_RSeQC_RNA[1]==TRUE){paste0("  - We consider mapping as ",tolower(strandness.found)," as we got the highest number of suitable reads for DE analysis.")}`
 
