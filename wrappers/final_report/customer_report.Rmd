@@ -855,6 +855,7 @@ if(config_json$RSEM[1] == TRUE){
 
 if(config_json$feature_count[1] == TRUE){
   fc.assign <- fread(paste0(MQC_DATA,"multiqc_featureCounts.txt"))
+  fc.assign <- fc.assign[,Sample:=as.character(Sample)]
   fc.assign <- merge(config_json[, .(Sample = full_name, condition)], fc.assign, by="Sample")
   setorder(fc.assign, condition, Sample)
 
