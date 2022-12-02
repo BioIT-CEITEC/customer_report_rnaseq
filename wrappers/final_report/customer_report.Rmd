@@ -193,6 +193,7 @@ if("plot.adaptor.max" %in% colnames(adaptor_max) == TRUE){
 ### Alignment and splices
 ```{r star, results='asis', echo=FALSE}
 multiqc_star <- fread(paste0(MQC_DATA,"multiqc_star.txt"))
+multiqc_star <- multiqc_star[, Sample:=as.character(Sample)]
 multiqc_star <- merge(config_json[, .(Sample = full_name, condition)], multiqc_star, by="Sample")
 
 multiqc_star_tabl <- multiqc_star[, .(Sample, condition,
