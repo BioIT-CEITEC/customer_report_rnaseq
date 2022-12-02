@@ -542,6 +542,7 @@ if(config_json$display_RSeQC_RNA[1]==TRUE){
 ```{r picard-metrics, echo=FALSE}
 if(config_json$display_picard_RNA[1]==TRUE){
   picard.metric <- fread(paste0(MQC_DATA,"multiqc_picard_RnaSeqMetrics.txt"))
+  picard.metric <- picard.metric[,Sample:=as.character(Sample)]
   picard.metric <- merge(config_json[, .(Sample = full_name, condition)], picard.metric, by="Sample")
 
   picard.metric.tbl <- picard.metric[, .(Sample, PF_BASES, PF_ALIGNED_BASES, Coding = CODING_BASES, UTR = UTR_BASES, Intronic = INTRONIC_BASES, Intergenic = INTERGENIC_BASES, not_aligned = PF_NOT_ALIGNED_BASES)]
