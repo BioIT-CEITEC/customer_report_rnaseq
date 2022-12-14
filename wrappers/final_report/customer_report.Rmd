@@ -1363,8 +1363,17 @@ no_null<-norm.plot(analysis_type, DE)
 
 pca_heatmap.plot<-function(analysis_type = analysis_type, DE = DE){
   output<-cat("- Samples from different condition clustering together might indicate a reduce effect coming from the tested treatment which often leads to low differentially expressed gene identification.","\n\n")
-  for(j in 1:length(analysis_type)){
+  for(j in 1:length(DE)){
     output<-c(output,cat("#### ",analysis_type[j],"\n"))
+    if (file.exists(paste0("../results/",DE[j],"/all_condition_results/report_data/sample_to_sample_PCA.svg"))) {
+      all_pca <- ifelse(file.exists(paste0("../results/",DE[j],"/all_condition_results/report_data/sample_to_sample_PCA_batch.svg")), paste0("../results/",DE[j],"/all_condition_results/report_data/sample_to_sample_PCA_batch.svg"), paste0("../results/",DE[j],"/all_condition_results/report_data/sample_to_sample_PCA.svg"))
+      all_heatmap <- ifelse(file.exists(paste0("../results/",DE[j],"/all_condition_results/report_data/heatmaps_samples_log_batch.svg")), paste0("../results/",DE[j],"/all_condition_results/report_data/heatmaps_samples_log_batch.svg"), paste0("../results/",DE[j],"/all_condition_results/report_data/heatmaps_samples_log2.svg"))
+      output<-c(output,cat("<div align='center'><figure style='width:50%;float:left'><img src=",all_pca," />","\n"))
+      output<-c(output,cat("<figcaption>PCA (first two components) visualization of all samples (DESeq2 VST normalization).</figcaption></figure>","\n"))
+      output<-c(output,cat("<figure style='width:50%;float:right'><img src=",all_heatmap," />","\n"))
+      output<-c(output,cat("<figcaption>Heatmap of samples clustered by gene expression (DESeq2 log2 normalization).</figcaption></figure>","\n"))
+      output<-c(output,cat("</div>","\n\n"))
+    }
 
     if(config_json$conditions_to_compare[1] == "all"){
       sample.sample.files <- data.table(comp = comparison[1])
