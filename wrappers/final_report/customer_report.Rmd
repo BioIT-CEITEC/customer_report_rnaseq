@@ -1353,55 +1353,69 @@ no_null<-norm.plot(analysis_type, DE)
 
 ### {-}
 
-### Sample clustering {.tabset}
+```{r de-plot-dt, echo=FALSE, results="asis"}
+plot.dt <- function(analysis.type = analysis_type, comp.folder = comparison, path.prefix = "../results/", path.suffix = "/report_data/", pattern1 = "volcanoplot.+png", pattern2 = "volcanoplot.+png"){
+  dt <- data.table(analysis.type=rep(analysis.type,length(comp.folder)))
+  setorder(dt, analysis.type)
+  dt <- dt[,DE:=paste0("DE_",analysis.type)]
+  dt <- dt[, comp.folder:=rep(comp.folder,length(unique(analysis.type)))]
+  dt <- dt[, path1:=list.files(paste0(path.prefix,DE,"/",comp.folder,path.suffix), pattern = pattern1, full.names = TRUE), by=.(DE,comp.folder)]
+  dt <- dt[, path2:=list.files(paste0(path.prefix,DE,"/",comp.folder,path.suffix), pattern = pattern2, full.names = TRUE), by=.(DE,comp.folder)]
+  dt <- dt[, path:=ifelse(is.na(path2) == FALSE,path2,path1)]
+  return(dt)
+}
+
+```
+
+### Sample clustering
 - Clustering of the samples (based on genes expression) shows if all the samples cluster together by their condition.
   - This is depicted in PCA plot (left).
   - This is summarized in heatmap (right).
 
 
 ```{r de-pca, echo=FALSE, out.width="80%", results="asis", dev="svg"}
-
-pca_heatmap.plot<-function(analysis_type = analysis_type, DE = DE){
+pca_heatmap.plot<-function(analysis_type = analysis_type, comparison = comparison){
   output<-cat("- Samples from different condition clustering together might indicate a reduce effect coming from the tested treatment which often leads to low differentially expressed gene identification.","\n\n")
-  for(j in 1:length(DE)){
-    output<-c(output,cat("#### ",analysis_type[j],"\n"))
-    if (file.exists(paste0("../results/",DE[j],"/all_condition_results/report_data/sample_to_sample_PCA.svg"))) {
-      all_pca <- ifelse(file.exists(paste0("../results/",DE[j],"/all_condition_results/report_data/sample_to_sample_PCA_batch.svg")), paste0("../results/",DE[j],"/all_condition_results/report_data/sample_to_sample_PCA_batch.svg"), paste0("../results/",DE[j],"/all_condition_results/report_data/sample_to_sample_PCA.svg"))
-      all_heatmap <- ifelse(file.exists(paste0("../results/",DE[j],"/all_condition_results/report_data/heatmaps_samples_log_batch.svg")), paste0("../results/",DE[j],"/all_condition_results/report_data/heatmaps_samples_log_batch.svg"), paste0("../results/",DE[j],"/all_condition_results/report_data/heatmaps_samples_log2.svg"))
+  if (dir.exists(paste0("../results/",DE[1],"/all_condition_results"))) {
+    output<-c(output,cat("#### Result over all condition {.tabset} \n"))
+    for(j in 1:length(analysis_type)){
+      output<-c(output,cat("##### ",analysis_type[j],"\n"))
+      allpca.dt <- plot.dt(analysis.type = analysis_type, comp.folder = "all_condition_results",path.prefix = "../", path.suffix = "/report_data/", pattern1 = "sample_to_sample_PCA.svg", pattern2 = "sample_to_sample_PCA_batch.svg")
+      allheatmap.dt <- plot.dt(analysis.type = analysis_type, comp.folder = "all_condition_results",path.prefix = "../", path.suffix = "/report_data/", pattern1 = "heatmaps_samples_log2.png", pattern2 = "heatmaps_samples_log_batch.png")
+      all_pca <- allpca.dt[analysis_type == analysis_type[j],]$path
+      all_heatmap <- allheatmap.dt[analysis_type == analysis_type[j],]$path
       output<-c(output,cat("<div align='center'><figure style='width:50%;float:left'><img src=",all_pca," />","\n"))
       output<-c(output,cat("<figcaption>PCA (first two components) visualization of all samples (DESeq2 VST normalization).</figcaption></figure>","\n"))
       output<-c(output,cat("<figure style='width:50%;float:right'><img src=",all_heatmap," />","\n"))
       output<-c(output,cat("<figcaption>Heatmap of samples clustered by gene expression (DESeq2 log2 normalization).</figcaption></figure>","\n"))
       output<-c(output,cat("</div>","\n\n"))
     }
-
-    if(config_json$conditions_to_compare[1] == "all"){
-      sample.sample.files <- data.table(comp = comparison[1])
-      sample.sample.files[, path_pca:=ifelse(file.exists(paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA_batch2.svg")), paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA_batch2.svg"), paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA2.svg"))]
-      sample.sample.files[, path_heatmap:=ifelse(file.exists(paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log_batch.png")), paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log_batch.png"), paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log.png"))]
-    }else{
-      sample.sample.files <- data.table(comp = comparison)
-      sample.sample.files[, path_pca:=ifelse(file.exists(paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA_batch2.svg")), paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA_batch2.svg"), paste0("../results/",DE[j],"/",comp,"/all/sample_to_sample_PCA2.svg"))]
-      sample.sample.files[, path_heatmap:=ifelse(file.exists(paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log_batch.png")), paste0("../results/",DE[j],"/",comparison,"/all/heatmaps_samples_log_batch.png"), paste0("../results/",DE[j],"/",comp,"/all/heatmaps_samples_log.png"))]
-    }
-
-    for(i in 1:length(sample.sample.files$path_pca)){
-      output<-c(output,cat("<div align='center'><figure style='width:50%;float:left'><img src=",sample.sample.files$path_pca[i]," />","\n"))
+  output <- c(output,cat("#### {-} \n\n"))
+  }
+  output <- c(output,cat("#### Results for each condition {.tabset} \n"))
+  for(i in 1:length(comparison)){
+    output<-cat("##### ",comparison[i]," {.tabset}","\n")
+    pca.dt <- plot.dt(analysis.type = analysis_type, comp.folder = comparison, path.prefix = "../", path.suffix = "/detail_results/report_data/", pattern1 = "sample_to_sample_PCA.svg", pattern2 = "sample_to_sample_PCA_batch.svg")
+    heatmap.dt <- plot.dt(analysis.type = analysis_type, comp.folder = comparison,path.prefix = "../", path.suffix = "/detail_results/report_data/", pattern1 = "heatmaps_samples_log2.png", pattern2 = "heatmaps_samples_log_batch.png")
+    for(j in 1:length(analysis_type)){
+      output<-c(output,cat("###### ",analysis_type[j]," \n"))
+      single_pca <- pca.dt[analysis.type == analysis_type[j] & comparison == comparison[i],]$path
+      single_heatmap <- heatmap.dt[analysis.type == analysis_type[j] & comparison == comparison[i],]$path
+      output<-c(output,cat("<div align='center'><figure style='width:50%;float:left'><img src=",single_pca," />","\n"))
       output<-c(output,cat("<figcaption>PCA (first two components) visualization of all samples (DESeq2 VST normalization).</figcaption></figure>","\n"))
-      output<-c(output,cat("<figure style='width:50%;float:right'><img src=",sample.sample.files$path_heatmap[i]," />","\n"))
+      output<-c(output,cat("<figure style='width:50%;float:right'><img src=",single_heatmap," />","\n"))
       output<-c(output,cat("<figcaption>Heatmap of samples clustered by gene expression (DESeq2 log2 normalization).</figcaption></figure>","\n"))
       output<-c(output,cat("</div>","\n\n"))
     }
   }
-  #output<-c(output,cat("\n### {-}"))
   return(output)
 }
 
-no_null<-pca_heatmap.plot(analysis_type, DE)
+no_null<-pca_heatmap.plot(analysis_type, comparison)
 
 ```
 
-### {-}
+#### {-}
 
 ## Differential expression results
 
