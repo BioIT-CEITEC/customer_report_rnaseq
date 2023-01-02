@@ -1332,10 +1332,10 @@ norm.plot<-function(analysis_type = analysis_type, DE = DE){
   for(j in 1:length(analysis_type)){
     output<-c(output,cat("#### ",analysis_type[j],"\n"))
 
-    if(config_json$conditions_to_compare[1] == "all"){
-      ppnc.files <- list.files(path=paste0("../results/",DE[j],"/",comparison[1],"/all/"),pattern ="pre_post_norm_counts.svg", full.names = T)
+    if(config_json$keep_not_compared_samples_for_normalization[1] == TRUE){
+      ppnc.files <- list.files(path=paste0("../",DE[j],"/all_condition_results/report_data/"),pattern ="pre_post_norm_counts.svg", full.names = T)
     }else{
-      ppnc.files <- list.files(path=paste0("../results/",DE[j],"/",comparison,"/all/"),pattern ="pre_post_norm_counts.svg", full.names = T)
+      ppnc.files <- list.files(path=paste0("../",DE[j],"/",comparison,"/detail_results/report_data/"),pattern ="pre_post_norm_counts.svg", full.names = T)
     }
 
     for(i in 1:length(ppnc.files)){
@@ -1354,7 +1354,7 @@ no_null<-norm.plot(analysis_type, DE)
 ### {-}
 
 ```{r de-plot-dt, echo=FALSE, results="asis"}
-plot.dt <- function(analysis.type = analysis_type, comp.folder = comparison, path.prefix = "../results/", path.suffix = "/report_data/", pattern1 = "volcanoplot.+png", pattern2 = "volcanoplot.+png"){
+plot.dt <- function(analysis.type = analysis_type, comp.folder = comparison, path.prefix = "../", path.suffix = "/report_data/", pattern1 = "volcanoplot.+png", pattern2 = "volcanoplot.+png"){
   dt <- data.table(analysis.type=rep(analysis.type,length(comp.folder)))
   setorder(dt, analysis.type)
   dt <- dt[,DE:=paste0("DE_",analysis.type)]
@@ -1455,7 +1455,7 @@ summary.table<-function(comparison=comparison, analysis_type = analysis_type, DE
     for(j in 1:length(DE)){
       de.tab.edger <- fread(paste0("../",DE[j],"/",comparison[i],"/edgeR/edgeR.tsv"),
                           sep  = "\t",header = T)
-      de.tab.deseq <- fread(paste0("../results/",DE[j],"/",comparison[i],"/detail_results/full_DESeq2.tsv"),
+      de.tab.deseq <- fread(paste0("../",DE[j],"/",comparison[i],"/detail_results/full_DESeq2.tsv"),
                           sep  = "\t",header = T)
       #de.tab.deseq.noIndFilt <- fread(paste0("../results/",DE[j],"/",comparison[i],"/all/DESeq2_noIndFilt.tsv"),
       #                    sep  = "\t",header = T)

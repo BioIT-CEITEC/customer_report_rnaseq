@@ -24,6 +24,7 @@
   "requested_params": [
     "is_paired",
     "reference",
+    "keep_not_compared_samples_for_normalization",
     "feature_count",
     "RSEM",
     "kallisto",
