@@ -76,7 +76,7 @@
       "display_samtools": {
         "label": "Report QC samtools",
         "type": "bool",
-        "default": true
+        "default": false
       },
       "display_dupradar_RNA": {
         "label": "Report QC dupradar RNA",
@@ -111,7 +111,7 @@
       "display_biobloom": {
         "label": "Report Biobloom tools",
         "type": "bool",
-        "default": false
+        "default": true
       }
     },
     "samples": {
