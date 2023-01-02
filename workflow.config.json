@@ -60,13 +60,19 @@
         "type": "string",
         "default": "all"
       },
-      "biotypes": {
-        "label": "Biotypes",
-        "type": "string",
-        "default": "all"
+      "keep_not_compared_samples_for_normalization": {
+        "label": "Keep not compared samples for normalization.",
+        "type": "bool",
+        "default": true
       }
     },
     "detailed": {
+      "biotypes": {
+        "label": "Biotypes",
+        "type": "enum",
+        "default": "all",
+        "list": {"all": "all"}
+      },
       "display_samtools": {
         "label": "Report QC samtools",
         "type": "bool",
