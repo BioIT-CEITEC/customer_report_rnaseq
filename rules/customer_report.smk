@@ -1,5 +1,5 @@
 rule final_report:
-    input:  tsv = expand("results/DE_{analysis_type}/{comparison}/{biotype}/DESeq2.tsv", analysis_type=analysis, comparison=comparison_dir_list, biotype=biotype_dir_list),
+    input:  tsv = expand("DE_{analysis_type}/{comparison}/DESeq2.tsv", analysis_type=analysis, comparison=comparison_dir_list, biotype=biotype_dir_list),
     output: html = "customer_report/customer_report.html"
     params: config = "customer_report.json",
             author = config["author"],
