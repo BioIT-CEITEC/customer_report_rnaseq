@@ -54,7 +54,7 @@ analysis_type <- unlist(strsplit(unique(config_json$analysis_type),split="\\|"))
 DE <- paste0("DE_",analysis_type) # feature_count is usually run by default
 analysis_type <- gsub("feature_count","featureCount",analysis_type)
 analysis_type <- gsub("kallisto","Kallisto",analysis_type)
-analysis_type <- gsub("salmon_aln","Salmon (alignment mode)",analysis_type)
+analysis_type <- gsub("salmon_align","Salmon (alignment mode)",analysis_type)
 analysis_type <- gsub("salmon_map","Salmon (mapping mode)",analysis_type)
 
 `%!in%` <- Negate(`%in%`)
