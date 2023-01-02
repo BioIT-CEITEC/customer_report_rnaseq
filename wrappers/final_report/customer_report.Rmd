@@ -1376,7 +1376,7 @@ plot.dt <- function(analysis.type = analysis_type, comp.folder = comparison, pat
 ```{r de-pca, echo=FALSE, out.width="80%", results="asis", dev="svg"}
 pca_heatmap.plot<-function(analysis_type = analysis_type, comparison = comparison){
   output<-cat("- Samples from different condition clustering together might indicate a reduce effect coming from the tested treatment which often leads to low differentially expressed gene identification.","\n\n")
-  if (dir.exists(paste0("../results/",DE[1],"/all_condition_results"))) {
+  if (dir.exists(paste0("../",DE[1],"/all_condition_results"))) {
     output<-c(output,cat("#### Result over all condition {.tabset} \n"))
     for(j in 1:length(analysis_type)){
       output<-c(output,cat("##### ",analysis_type[j],"\n"))
@@ -1453,12 +1453,12 @@ summary.table<-function(comparison=comparison, analysis_type = analysis_type, DE
     tabl.de.de.all <- data.table()
 
     for(j in 1:length(DE)){
-      de.tab.edger <- fread(paste0("../results/",DE[j],"/",comparison[i],"/all/edgeR.tsv"),
+      de.tab.edger <- fread(paste0("../",DE[j],"/",comparison[i],"/edgeR/edgeR.tsv"),
                           sep  = "\t",header = T)
-      de.tab.deseq <- fread(paste0("../results/",DE[j],"/",comparison[i],"/all/DESeq2.tsv"),
+      de.tab.deseq <- fread(paste0("../results/",DE[j],"/",comparison[i],"/detail_results/full_DESeq2.tsv"),
                           sep  = "\t",header = T)
-      de.tab.deseq.noIndFilt <- fread(paste0("../results/",DE[j],"/",comparison[i],"/all/DESeq2_noIndFilt.tsv"),
-                                    sep  = "\t",header = T)
+      #de.tab.deseq.noIndFilt <- fread(paste0("../results/",DE[j],"/",comparison[i],"/all/DESeq2_noIndFilt.tsv"),
+      #                    sep  = "\t",header = T)
 
       de.tab.edger.upl <- dim(de.tab.edger[padj < 0.05 & log2FoldChange >= 1,])[1]
       de.tab.edger.dnl <- dim(de.tab.edger[padj < 0.05 & log2FoldChange <= -1,])[1]
@@ -1470,10 +1470,10 @@ summary.table<-function(comparison=comparison, analysis_type = analysis_type, DE
       de.tab.deseq.up <- dim(de.tab.deseq[padj < 0.05 & log2FoldChange > 0,])[1]
       de.tab.deseq.dn <- dim(de.tab.deseq[padj < 0.05 & log2FoldChange < 0,])[1]
 
-      de.tab.deseq.noIndFilt.upl <- dim(de.tab.deseq.noIndFilt[padj < 0.05 & log2FoldChange >= 1,])[1]
-      de.tab.deseq.noIndFilt.dnl <- dim(de.tab.deseq.noIndFilt[padj < 0.05 & log2FoldChange <= -1,])[1]
-      de.tab.deseq.noIndFilt.up <- dim(de.tab.deseq.noIndFilt[padj < 0.05 & log2FoldChange > 0,])[1]
-      de.tab.deseq.noIndFilt.dn <- dim(de.tab.deseq.noIndFilt[padj < 0.05 & log2FoldChange < 0,])[1]
+      de.tab.deseq.noIndFilt.upl <- dim(de.tab.deseq[no_filter_padj < 0.05 & no_filter_log2FoldChange >= 1,])[1]
+      de.tab.deseq.noIndFilt.dnl <- dim(de.tab.deseq[no_filter_padj < 0.05 & no_filter_log2FoldChange <= -1,])[1]
+      de.tab.deseq.noIndFilt.up <- dim(de.tab.deseq[no_filter_padj < 0.05 & no_filter_log2FoldChange > 0,])[1]
+      de.tab.deseq.noIndFilt.dn <- dim(de.tab.deseq[no_filter_padj < 0.05 & no_filter_log2FoldChange < 0,])[1]
 
       tabl.de.de <- data.table(Analysis=c("DESeq2","DESeq2 noIndFilt","edgeR"),
                 up_pval_logfc=c(de.tab.deseq.upl,de.tab.deseq.noIndFilt.upl,de.tab.edger.upl),
@@ -1525,12 +1525,12 @@ Summary or number of DE genes based on default cut-off values from all three DE 
 volcano.ma.plots<-function(comparison=comparison, analysis_type = analysis_type, DE = DE){
   output<-cat("#### ",comparison[1]," {.tabset}","\n")
   for(j in 1:length(DE)){
-    volcano.files <- grep(grep(grep(list.files(path=paste0("../results/",DE[j],"/",comparison[1],"/all/"),
-                               pattern = "volcano", full.names = T), pattern="Filt", value = T, invert = T),
-                               pattern="edgeR", value = T, invert = T), pattern="ggplot2.png", value=T)
-    ma.files <- grep(grep(grep(list.files(path=paste0("../results/",DE[j],"/",comparison[1],"/all/"),
+    volcano.files <- grep(grep(grep(list.files(path=paste0("../",DE[j],"/",comparison[1],"/report_data/"),
+                               pattern = "volcanoplot_", full.names = T), pattern="Filt", value = T, invert = T),
+                               pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
+    ma.files <- grep(grep(grep(list.files(path=paste0("../",DE[j],"/",comparison[1],"/report_data/"),
                                pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T),
-                               pattern="edgeR", value = T, invert = T), pattern="ggpubr.png", value=T)
+                               pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
 
     output<-c(output,cat("##### ",analysis_type[j],"\n"))
     if(length(volcano.files)>=1){
@@ -1549,12 +1549,12 @@ volcano.ma.plots<-function(comparison=comparison, analysis_type = analysis_type,
     for(i in 2:length(comparison)){
       output<-c(output,cat("#### ",comparison[i],"\n"))
       for(j in 1:length(DE)){
-        volcano.files <- grep(grep(grep(list.files(path=paste0("../results/",DE[j],"/",comparison[i],"/all/"),
-                               pattern = "volcano", full.names = T), pattern="Filt", value = T, invert = T),
-                               pattern="edgeR", value = T, invert = T), pattern="ggplot2.png", value=T)
-        ma.files <- grep(grep(grep(list.files(path=paste0("../results/",DE[j],"/",comparison[i],"/all/"),
+        volcano.files <- grep(grep(grep(list.files(path=paste0("../",DE[j],"/",comparison[i],"/report_data/"),
+                               pattern = "volcanoplot_", full.names = T), pattern="Filt", value = T, invert = T),
+                               pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
+        ma.files <- grep(grep(grep(list.files(path=paste0("../",DE[j],"/",comparison[i],"/report_data/"),
                                pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T),
-                               pattern="edgeR", value = T, invert = T), pattern="ggpubr.png", value=T)
+                               pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
 
         output<-c(output,cat("##### ",analysis_type[j],"\n"))
         if(length(volcano.files)>=1){
@@ -1589,7 +1589,7 @@ no_null<-volcano.ma.plots(comparison, analysis_type, DE)
 top.de.plots<-function(comparison=comparison, analysis_type = analysis_type, DE = DE){
   output<-cat("#### ",comparison[1]," {.tabset}","\n")
   for(j in 1:length(DE)){
-    top_de.files <- list.files(path=paste0("../results/",DE[j],"/",comparison[1],"/all/"),
+    top_de.files <- list.files(path=paste0("../",DE[j],"/",comparison[1],"/report_data/"),
                                pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
 
     output<-c(output,cat("##### ",analysis_type[j],"\n"))
@@ -1611,7 +1611,7 @@ top.de.plots<-function(comparison=comparison, analysis_type = analysis_type, DE 
     for(i in 2:length(comparison)){
       output<-c(output,cat("#### ",comparison[i],"\n"))
       for(j in 1:length(DE)){
-        top_de.files <- list.files(path=paste0("../results/",DE[j],"/",comparison[i],"/all/"),
+        top_de.files <- list.files(path=paste0("../",DE[j],"/",comparison[i],"/report_data/"),
                                pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
 
         output<-c(output,cat("##### ",analysis_type[j],"\n"))
