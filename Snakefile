@@ -79,6 +79,8 @@ if config["salmon_map"]:
 if config["kallisto"]:
     analysis.append("kallisto")
 
+biotype_dir_list = config['biotypes'].split(",")
+
 config["analysis_type"] = "|".join(analysis)
 config["biotype_list"] = "|".join(biotype_dir_list)
 config["comparison"] = "|".join(comparison_dir_list)
