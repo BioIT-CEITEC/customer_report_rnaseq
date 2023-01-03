@@ -6,7 +6,9 @@
     "type": "customer_report",
     "inputs": [
       "qc_reports/*",
-      "DE*"
+      "DE*/*",
+      "DE*/*/*",
+      "DE*/*/*/*"
     ],
     "outputs": [
       "customer_report/*",
