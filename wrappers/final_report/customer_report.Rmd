@@ -50,17 +50,18 @@ config_json[,full_name := sapply(1:length(config_json$samples),function(x) confi
 
 comparison <- unlist(strsplit(unique(config_json$comparison),split="\\|"))
 biotype <- unlist(strsplit(unique(config_json$biotype_list),split="\\|"))
-analysis_type <- unlist(strsplit(unique(config_json$analysis_type),split="\\|"))
-DE <- paste0("DE_",analysis_type) # feature_count is usually run by default
-analysis_type <- gsub("feature_count","featureCount",analysis_type)
-analysis_type <- gsub("kallisto","Kallisto",analysis_type)
-analysis_type <- gsub("salmon_align","Salmon (alignment mode)",analysis_type)
-analysis_type <- gsub("salmon_map","Salmon (mapping mode)",analysis_type)
+analysis_type <- data.table(analysis=unlist(strsplit(unique(config_json$analysis_type),split="\\|")))
+analysis_type <- analysis_type[,DE := paste0("DE_",analysis)] # feature_count is usually run by default
+analysis_type <- analysis_type[, name := analysis]
+analysis_type <- analysis_type[name == "feature_count", name := "featureCount"]
+analysis_type <- analysis_type[name == "kallisto", name := "Kallisto"]
+analysis_type <- analysis_type[name == "salmon_align", name := "Salmon (alignment mode)"]
+analysis_type <- analysis_type[name == "salmon_map", name := "Salmon (mapping mode)"]
 
 `%!in%` <- Negate(`%in%`)
 `%!like%` <- Negate(`%like%`)
 
-mRNA_DE_FOLDER_PATH <- paste0("../results/",DE,"/")
+mRNA_DE_FOLDER_PATH <- paste0("../",analysis_type$DE,"/")
 INPUTFILES <- paste0("../qc_reports/")
 MQC_DATA <- paste0(INPUTFILES,"all_samples/","multiqc_data/")
 
@@ -1316,45 +1317,10 @@ if(config_json$display_biotypes_RNA[1] == TRUE){plotly.mybar.count}
 - All the index files (.bai, .fai, .idx) must be in the same folder as their "parent" files otherwise IGV wouldn't open them.
 
 # DE analysis
-- For the DE analysis we used gene counts from the following tool(s): `r paste(analysis_type, collapse=", ")`.
-
-## Expression-based quality check
-
-### Normalization {.tabset}
-
-```{r de-norm-count, echo=FALSE, out.width="80%", results="asis", dev="svg"}
-
-norm.plot<-function(analysis_type = analysis_type, DE = DE){
-  output<-cat("- Read counts for coding genes (mostly protein-coding genes) distribution is depicted in the following Figure(s).","\n")
-  output<-c(output,cat("- Post-normalization counts (~normalized expressions) can be controlled for unusual remaining differences in expression level between samples.","\n"))
-  output<-c(output,cat("- If the normalized expression is not similar between samples, it might be needed to sub-sample or remove sample(s) with too high expression difference.","\n\n"))
-
-  for(j in 1:length(analysis_type)){
-    output<-c(output,cat("#### ",analysis_type[j],"\n"))
-
-    if(config_json$keep_not_compared_samples_for_normalization[1] == TRUE){
-      ppnc.files <- list.files(path=paste0("../",DE[j],"/all_condition_results/report_data/"),pattern ="pre_post_norm_counts.svg", full.names = T)
-    }else{
-      ppnc.files <- list.files(path=paste0("../",DE[j],"/",comparison,"/detail_results/report_data/"),pattern ="pre_post_norm_counts.svg", full.names = T)
-    }
-
-    for(i in 1:length(ppnc.files)){
-      output<-c(output,cat("<div align='center'><figure style='width:80%'><img src=",ppnc.files[i]," /><figcaption>Number of reads assigned to coding genes for all the samples before normalization (raw counts) and after normalization (normalized counts).</figcaption></figure></div>"))
-      output<-c(output,cat("\n\n"))
-    }
-  }
-  output<-c(output,cat("\n\n"))
-  return(output)
-}
-
-no_null<-norm.plot(analysis_type, DE)
-
-```
-
-### {-}
+- For the DE analysis we used gene counts from the following tool(s): `r paste(analysis_type$name, collapse=", ")`.
 
 ```{r de-plot-dt, echo=FALSE, results="asis"}
-plot.dt <- function(analysis.type = analysis_type, comp.folder = comparison, path.prefix = "../", path.suffix = "/report_data/", pattern1 = "volcanoplot.+png", pattern2 = "volcanoplot.+png"){
+plot.dt <- function(analysis.type = analysis_type$analysis, comp.folder = comparison, path.prefix = "../", path.suffix = "/report_data/", pattern1 = "volcanoplot.+png", pattern2 = "volcanoplot.+png"){
   dt <- data.table(analysis.type=rep(analysis.type,length(comp.folder)))
   setorder(dt, analysis.type)
   dt <- dt[,DE:=paste0("DE_",analysis.type)]
@@ -1367,6 +1333,43 @@ plot.dt <- function(analysis.type = analysis_type, comp.folder = comparison, pat
 
 ```
 
+## Expression-based quality check
+
+### Normalization {.tabset}
+
+```{r de-norm-count, echo=FALSE, out.width="80%", results="asis", dev="svg"}
+
+norm.plot<-function(analysis_type = analysis_type){
+  output<-cat("- Read counts for coding genes (mostly protein-coding genes) distribution is depicted in the following Figure(s).","\n")
+  output<-c(output,cat("- Post-normalization counts (~normalized expressions) can be controlled for unusual remaining differences in expression level between samples.","\n"))
+  output<-c(output,cat("- If the normalized expression is not similar between samples, it might be needed to sub-sample or remove sample(s) with too high expression difference.","\n\n"))
+
+  for(j in 1:length(analysis_type$analysis)){
+    output<-c(output,cat("#### ",analysis_type$name[j],"\n"))
+
+    if(config_json$keep_not_compared_samples_for_normalization[1] == TRUE){
+      ppnc.files <- plot.dt(analysis.type = analysis_type$analysis[j], comp.folder = "all_condition_results/",path.prefix = "../", path.suffix = "/report_data/", pattern1 = "pre_post_norm_counts.svg", pattern2 = "pre_post_norm_counts.svg")
+    }else{
+      ppnc.files <- plot.dt(analysis.type = analysis_type$analysis[j], comp.folder = comparison, path.prefix = "../", path.suffix = "/detail_results/report_data/", pattern1 = "pre_post_norm_counts.svg", pattern2 = "pre_post_norm_counts.svg")
+    }
+
+    for(i in 1:length(ppnc.files$path)){
+      output<-c(output,cat("<div align='center'><figure style='width:80%'><img src=",ppnc.files$path[i]," /><figcaption>Number of reads assigned to coding genes for all the samples before normalization (raw counts) and after normalization (normalized counts).</figcaption></figure></div>"))
+      output<-c(output,cat("\n\n"))
+    }
+  }
+  output<-c(output,cat("\n\n"))
+  return(output)
+}
+
+no_null<-norm.plot(analysis_type)
+
+```
+
+### {-}
+
+
+
 ### Sample clustering
 - Clustering of the samples (based on genes expression) shows if all the samples cluster together by their condition.
   - This is depicted in PCA plot (left).
@@ -1376,14 +1379,14 @@ plot.dt <- function(analysis.type = analysis_type, comp.folder = comparison, pat
 ```{r de-pca, echo=FALSE, out.width="80%", results="asis", dev="svg"}
 pca_heatmap.plot<-function(analysis_type = analysis_type, comparison = comparison){
   output<-cat("- Samples from different condition clustering together might indicate a reduce effect coming from the tested treatment which often leads to low differentially expressed gene identification.","\n\n")
-  if (dir.exists(paste0("../",DE[1],"/all_condition_results"))) {
+  if (dir.exists(paste0("../",analysis_type$DE[1],"/all_condition_results"))) {
     output<-c(output,cat("#### Result over all condition {.tabset} \n"))
-    for(j in 1:length(analysis_type)){
-      output<-c(output,cat("##### ",analysis_type[j],"\n"))
-      allpca.dt <- plot.dt(analysis.type = analysis_type, comp.folder = "all_condition_results",path.prefix = "../", path.suffix = "/report_data/", pattern1 = "sample_to_sample_PCA.svg", pattern2 = "sample_to_sample_PCA_batch.svg")
-      allheatmap.dt <- plot.dt(analysis.type = analysis_type, comp.folder = "all_condition_results",path.prefix = "../", path.suffix = "/report_data/", pattern1 = "heatmaps_samples_log2.png", pattern2 = "heatmaps_samples_log_batch.png")
-      all_pca <- allpca.dt[analysis_type == analysis_type[j],]$path
-      all_heatmap <- allheatmap.dt[analysis_type == analysis_type[j],]$path
+    for(j in 1:length(analysis_type$name)){
+      output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
+      allpca.dt <- plot.dt(analysis.type = analysis_type$analysis, comp.folder = "all_condition_results",path.prefix = "../", path.suffix = "/report_data/", pattern1 = "sample_to_sample_PCA.svg", pattern2 = "sample_to_sample_PCA_batch.svg")
+      allheatmap.dt <- plot.dt(analysis.type = analysis_type$analysis, comp.folder = "all_condition_results",path.prefix = "../", path.suffix = "/report_data/", pattern1 = "heatmaps_samples_log2.png", pattern2 = "heatmaps_samples_log_batch.png")
+      all_pca <- allpca.dt[analysis.type == analysis_type$analysis[j],]$path
+      all_heatmap <- allheatmap.dt[analysis.type == analysis_type$analysis[j],]$path
       output<-c(output,cat("<div align='center'><figure style='width:50%;float:left'><img src=",all_pca," />","\n"))
       output<-c(output,cat("<figcaption>PCA (first two components) visualization of all samples (DESeq2 VST normalization).</figcaption></figure>","\n"))
       output<-c(output,cat("<figure style='width:50%;float:right'><img src=",all_heatmap," />","\n"))
@@ -1395,12 +1398,12 @@ pca_heatmap.plot<-function(analysis_type = analysis_type, comparison = compariso
   output <- c(output,cat("#### Results for each condition {.tabset} \n"))
   for(i in 1:length(comparison)){
     output<-cat("##### ",comparison[i]," {.tabset}","\n")
-    pca.dt <- plot.dt(analysis.type = analysis_type, comp.folder = comparison, path.prefix = "../", path.suffix = "/detail_results/report_data/", pattern1 = "sample_to_sample_PCA.svg", pattern2 = "sample_to_sample_PCA_batch.svg")
-    heatmap.dt <- plot.dt(analysis.type = analysis_type, comp.folder = comparison,path.prefix = "../", path.suffix = "/detail_results/report_data/", pattern1 = "heatmaps_samples_log2.png", pattern2 = "heatmaps_samples_log_batch.png")
-    for(j in 1:length(analysis_type)){
-      output<-c(output,cat("###### ",analysis_type[j]," \n"))
-      single_pca <- pca.dt[analysis.type == analysis_type[j] & comparison == comparison[i],]$path
-      single_heatmap <- heatmap.dt[analysis.type == analysis_type[j] & comparison == comparison[i],]$path
+    pca.dt <- plot.dt(analysis.type = analysis_type$analysis, comp.folder = comparison, path.prefix = "../", path.suffix = "/detail_results/report_data/", pattern1 = "sample_to_sample_PCA.svg", pattern2 = "sample_to_sample_PCA_batch.svg")
+    heatmap.dt <- plot.dt(analysis.type = analysis_type$analysis, comp.folder = comparison,path.prefix = "../", path.suffix = "/detail_results/report_data/", pattern1 = "heatmaps_samples_log2.png", pattern2 = "heatmaps_samples_log_batch.png")
+    for(j in 1:length(analysis_type$name)){
+      output<-c(output,cat("###### ",analysis_type$name[j]," \n"))
+      single_pca <- pca.dt[analysis.type == analysis_type$analysis[j] & comparison == comparison[i],]$path
+      single_heatmap <- heatmap.dt[analysis.type == analysis_type$analysis[j] & comparison == comparison[i],]$path
       output<-c(output,cat("<div align='center'><figure style='width:50%;float:left'><img src=",single_pca," />","\n"))
       output<-c(output,cat("<figcaption>PCA (first two components) visualization of all samples (DESeq2 VST normalization).</figcaption></figure>","\n"))
       output<-c(output,cat("<figure style='width:50%;float:right'><img src=",single_heatmap," />","\n"))
@@ -1446,16 +1449,16 @@ no_null<-pca_heatmap.plot(analysis_type, comparison)
 ### <a name="summary-table"> </a> Summary table {.tabset}
 
 ```{r tab.id="tabl-de-de", echo=FALSE, results="asis", ft.split=F}
-summary.table<-function(comparison=comparison, analysis_type = analysis_type, DE = DE){
+summary.table<-function(comparison=comparison, analysis_type = analysis_type){
   output<-cat("\n")
   for(i in 1:length(comparison)){
 
     tabl.de.de.all <- data.table()
 
-    for(j in 1:length(DE)){
-      de.tab.edger <- fread(paste0("../",DE[j],"/",comparison[i],"/edgeR/edgeR.tsv"),
+    for(j in 1:length(analysis_type$DE)){
+      de.tab.edger <- fread(paste0("../",analysis_type$DE[j],"/",comparison[i],"/edgeR/edgeR.tsv"),
                           sep  = "\t",header = T)
-      de.tab.deseq <- fread(paste0("../",DE[j],"/",comparison[i],"/detail_results/full_DESeq2.tsv"),
+      de.tab.deseq <- fread(paste0("../",analysis_type$DE[j],"/",comparison[i],"/detail_results/full_DESeq2.tsv"),
                           sep  = "\t",header = T)
       #de.tab.deseq.noIndFilt <- fread(paste0("../results/",DE[j],"/",comparison[i],"/all/DESeq2_noIndFilt.tsv"),
       #                    sep  = "\t",header = T)
@@ -1480,7 +1483,7 @@ summary.table<-function(comparison=comparison, analysis_type = analysis_type, DE
                 down_pval_logfc=c(de.tab.deseq.dnl,de.tab.deseq.noIndFilt.dnl,de.tab.edger.dnl),
                 up_pval=c(de.tab.deseq.up,de.tab.deseq.noIndFilt.up,de.tab.edger.up),
                 down_pval=c(de.tab.deseq.dn,de.tab.deseq.noIndFilt.dn,de.tab.edger.dn))
-      tabl.de.de <- tabl.de.de[,.(Tool = analysis_type[j], Comparison = comparison[i], Analysis, up_pval_logfc, down_pval_logfc, up_pval, down_pval)]
+      tabl.de.de <- tabl.de.de[,.(Tool = analysis_type$name[j], Comparison = comparison[i], Analysis, up_pval_logfc, down_pval_logfc, up_pval, down_pval)]
 
       tabl.de.de.all <- rbind(tabl.de.de.all,tabl.de.de)
     }
@@ -1508,7 +1511,7 @@ summary.table<-function(comparison=comparison, analysis_type = analysis_type, DE
   return(output)
 }
 
-no_null<-summary.table(comparison, analysis_type, DE)
+no_null<-summary.table(comparison, analysis_type)
 
 ```
 
@@ -1522,17 +1525,17 @@ Summary or number of DE genes based on default cut-off values from all three DE 
 
 ```{r de-volcano-ma, echo=FALSE, out.width="80%", results="asis", dev="svg"}
 
-volcano.ma.plots<-function(comparison=comparison, analysis_type = analysis_type, DE = DE){
+volcano.ma.plots<-function(comparison=comparison, analysis_type = analysis_type){
   output<-cat("#### ",comparison[1]," {.tabset}","\n")
-  for(j in 1:length(DE)){
-    volcano.files <- grep(grep(grep(list.files(path=paste0("../",DE[j],"/",comparison[1],"/report_data/"),
+  for(j in 1:length(analysis_type$DE)){
+    volcano.files <- grep(grep(grep(list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[1],"/report_data/"),
                                pattern = "volcanoplot_", full.names = T), pattern="Filt", value = T, invert = T),
                                pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
-    ma.files <- grep(grep(grep(list.files(path=paste0("../",DE[j],"/",comparison[1],"/report_data/"),
+    ma.files <- grep(grep(grep(list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[1],"/report_data/"),
                                pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T),
                                pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
 
-    output<-c(output,cat("##### ",analysis_type[j],"\n"))
+    output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
     if(length(volcano.files)>=1){
       for(k in 1:length(volcano.files)){
         output<-c(output,cat("<div align='center'>","\n"))
@@ -1548,15 +1551,15 @@ volcano.ma.plots<-function(comparison=comparison, analysis_type = analysis_type,
   if(length(comparison)>1){
     for(i in 2:length(comparison)){
       output<-c(output,cat("#### ",comparison[i],"\n"))
-      for(j in 1:length(DE)){
-        volcano.files <- grep(grep(grep(list.files(path=paste0("../",DE[j],"/",comparison[i],"/report_data/"),
+      for(j in 1:length(analysis_type$DE)){
+        volcano.files <- grep(grep(grep(list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[i],"/report_data/"),
                                pattern = "volcanoplot_", full.names = T), pattern="Filt", value = T, invert = T),
                                pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
-        ma.files <- grep(grep(grep(list.files(path=paste0("../",DE[j],"/",comparison[i],"/report_data/"),
+        ma.files <- grep(grep(grep(list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[i],"/report_data/"),
                                pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T),
                                pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
 
-        output<-c(output,cat("##### ",analysis_type[j],"\n"))
+        output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
         if(length(volcano.files)>=1){
           for(k in 1:length(volcano.files)){
             output<-c(output,cat("<div align='center'>","\n"))
@@ -1574,7 +1577,7 @@ volcano.ma.plots<-function(comparison=comparison, analysis_type = analysis_type,
   return(output)
 }
 
-no_null<-volcano.ma.plots(comparison, analysis_type, DE)
+no_null<-volcano.ma.plots(comparison, analysis_type)
 
 ```
 
@@ -1586,13 +1589,13 @@ no_null<-volcano.ma.plots(comparison, analysis_type, DE)
 
 ```{r de-top-de, echo=FALSE, results="asis", dev="svg"}
 
-top.de.plots<-function(comparison=comparison, analysis_type = analysis_type, DE = DE){
+top.de.plots<-function(comparison=comparison, analysis_type = analysis_type){
   output<-cat("#### ",comparison[1]," {.tabset}","\n")
-  for(j in 1:length(DE)){
-    top_de.files <- list.files(path=paste0("../",DE[j],"/",comparison[1],"/report_data/"),
+  for(j in 1:length(analysis_type$DE)){
+    top_de.files <- list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[1],"/report_data/"),
                                pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
 
-    output<-c(output,cat("##### ",analysis_type[j],"\n"))
+    output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
     if(length(top_de.files)>0){
       if(length(top_de.files)>=1){
         for(k in 1:length(top_de.files)){
@@ -1610,11 +1613,11 @@ top.de.plots<-function(comparison=comparison, analysis_type = analysis_type, DE 
   if(length(comparison)>1){
     for(i in 2:length(comparison)){
       output<-c(output,cat("#### ",comparison[i],"\n"))
-      for(j in 1:length(DE)){
-        top_de.files <- list.files(path=paste0("../",DE[j],"/",comparison[i],"/report_data/"),
+      for(j in 1:length(analysis_type$DE)){
+        top_de.files <- list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[i],"/report_data/"),
                                pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
 
-        output<-c(output,cat("##### ",analysis_type[j],"\n"))
+        output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
         if(length(top_de.files)>0){
           if(length(top_de.files)>=1){
             for(k in 1:length(top_de.files)){
@@ -1634,7 +1637,7 @@ top.de.plots<-function(comparison=comparison, analysis_type = analysis_type, DE 
   return(output)
 }
 
-no_null<-top.de.plots(comparison, analysis_type, DE)
+no_null<-top.de.plots(comparison, analysis_type)
 
 ```
 
