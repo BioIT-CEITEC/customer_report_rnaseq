@@ -5,11 +5,14 @@
     "label": "Customer Report for RNA-Seq and DE analysis",
     "type": "customer_report",
     "inputs": [
-      "qc_reports/*",
-      "DE*/*",
-      "DE*/*/*",
-      "DE*/*/*/*",
-      "DE*/*/*/*/*"
+      "qc_reports/*"
+    ],
+    "inputs_optional":[
+      "DE_RSEM/*",
+      "DE_feature_count/*",
+      "DE_salmon_map/*",
+      "DE_salmon_align/*",
+      "DE_kallisto/*"
     ],
     "outputs": [
       "customer_report/*",
