@@ -1525,59 +1525,30 @@ Summary or number of DE genes based on default cut-off values from all three DE 
 
 ```{r de-volcano-ma, echo=FALSE, out.width="80%", results="asis", dev="svg"}
 
-volcano.ma.plots<-function(comparison=comparison, analysis_type = analysis_type){
-  output<-cat("#### ",comparison[1]," {.tabset}","\n")
-  for(j in 1:length(analysis_type$DE)){
-    volcano.files <- grep(grep(grep(list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[1],"/report_data/"),
-                               pattern = "volcanoplot_", full.names = T), pattern="Filt", value = T, invert = T),
-                               pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
-    ma.files <- grep(grep(grep(list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[1],"/report_data/"),
-                               pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T),
-                               pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
-
-    output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
-    if(length(volcano.files)>=1){
-      for(k in 1:length(volcano.files)){
-        output<-c(output,cat("<div align='center'>","\n"))
-        output<-c(output,cat("<figure><img src=",volcano.files[k]," width='80%'/>","\n"))
-        output<-c(output,cat("<figcaption>Volcano plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named.</figcaption></figure>","\n"))
-        output<-c(output,cat("<figure><img src=",ma.files[k]," width='80%'/>","\n"))
-        output<-c(output,cat("<figcaption>MA plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named.</figcaption></figure>","\n"))
-        output<-c(output,cat("</div>","\n\n"))
+volcano.ma.plots<-function(analysis_type = analysis_type, comparison=comparison){
+  for(i in 1:length(comparison)){
+    output<-cat("#### ",comparison[i]," {.tabset}","\n")
+    volcano.dt <- plot.dt(analysis.type = analysis_type$analysis, comp.folder = comparison,
+                          path.prefix = "../", path.suffix = "/report_data/",
+                          pattern1 = "volcanoplot.+png", pattern2 = "volcanoplot.+png")
+    ma.dt <- plot.dt(analysis.type = analysis_type$analysis, comp.folder = comparison,
+                          path.prefix = "../", path.suffix = "/report_data/",
+                          pattern1 = "MAplot.+png", pattern2 = "MAplot.+png")
+    for(j in 1:length(analysis_type$name)){
+      output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
+      single_volcano <- volcano.dt[analysis.type == analysis_type$analysis[j] & comparison == comparison[i],]$path
+      single_ma <- ma.dt[analysis.type == analysis_type$analysis[j] & comparison == comparison[i],]$path
+      output<-c(output,cat("<div align='center'><figure style='width:80%'><img src=",single_volcano," />","\n"))
+      output<-c(output,cat("<figcaption>Volcano plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named.</figcaption></figure>","\n"))
+      output<-c(output,cat("<figure style='width:80%'><img src=",single_map," />","\n"))
+      output<-c(output,cat("<figcaption>MA plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named.</figcaption></figure>","\n"))
+      output<-c(output,cat("</div>","\n\n"))
       }
     }
+    return(output)
   }
-  output<-c(output,cat("#### {-}","\n\n"))
-  if(length(comparison)>1){
-    for(i in 2:length(comparison)){
-      output<-c(output,cat("#### ",comparison[i],"\n"))
-      for(j in 1:length(analysis_type$DE)){
-        volcano.files <- grep(grep(grep(list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[i],"/report_data/"),
-                               pattern = "volcanoplot_", full.names = T), pattern="Filt", value = T, invert = T),
-                               pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
-        ma.files <- grep(grep(grep(list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[i],"/report_data/"),
-                               pattern = "MAplot_", full.names = T), pattern="Filt", value = T, invert = T),
-                               pattern="edgeR", value = T, invert = T), pattern=".png", value=T)
 
-        output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
-        if(length(volcano.files)>=1){
-          for(k in 1:length(volcano.files)){
-            output<-c(output,cat("<div align='center'>","\n"))
-            output<-c(output,cat("<figure><img src=",volcano.files[k]," width='80%'/>","\n"))
-            output<-c(output,cat("<figcaption>Volcano plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named.</figcaption></figure>","\n"))
-            output<-c(output,cat("<figure><img src=",ma.files[k]," width='80%'/>","\n"))
-            output<-c(output,cat("<figcaption>MA plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named.</figcaption></figure>","\n"))
-            output<-c(output,cat("</div>","\n\n"))
-          }
-        }
-      }
-      output<-c(output,cat("#### {-}","\n\n"))
-    }
-  }
-  return(output)
-}
-
-no_null<-volcano.ma.plots(comparison, analysis_type)
+no_null<-volcano.ma.plots(analysis_type, comparison)
 
 ```
 
