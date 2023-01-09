@@ -1540,7 +1540,7 @@ volcano.ma.plots<-function(analysis_type = analysis_type, comparison=comparison)
       single_ma <- ma.dt[analysis.type == analysis_type$analysis[j] & comparison == comparison[i],]$path
       output<-c(output,cat("<div align='center'><figure style='width:80%'><img src=",single_volcano," />","\n"))
       output<-c(output,cat("<figcaption>Volcano plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named.</figcaption></figure>","\n"))
-      output<-c(output,cat("<figure style='width:80%'><img src=",single_map," />","\n"))
+      output<-c(output,cat("<figure style='width:80%'><img src=",single_ma," />","\n"))
       output<-c(output,cat("<figcaption>MA plot (DESeq2 results with independent filtering on). Maximum of 20 most DE genes (by adj.p-value) are named.</figcaption></figure>","\n"))
       output<-c(output,cat("</div>","\n\n"))
       }
