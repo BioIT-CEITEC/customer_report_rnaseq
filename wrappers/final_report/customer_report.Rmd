@@ -1560,55 +1560,27 @@ no_null<-volcano.ma.plots(analysis_type, comparison)
 
 ```{r de-top-de, echo=FALSE, results="asis", dev="svg"}
 
-top.de.plots<-function(comparison=comparison, analysis_type = analysis_type){
-  output<-cat("#### ",comparison[1]," {.tabset}","\n")
-  for(j in 1:length(analysis_type$DE)){
-    top_de.files <- list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[1],"/report_data/"),
-                               pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
-
-    output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
-    if(length(top_de.files)>0){
-      if(length(top_de.files)>=1){
-        for(k in 1:length(top_de.files)){
-          output<-c(output,cat("<div align='center'>","\n"))
-          output<-c(output,cat("<figure><img src=",top_de.files[k]," width='80%'/>","\n"))
-          output<-c(output,cat("<figcaption>Heatmap of maximum top 20 differentially expressed genes (DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1).</figcaption></figure>","\n"))
-          output<-c(output,cat("</div>","\n\n"))
-        }
+top.de.plots<-function(analysis_type = analysis_type, comparison=comparison){
+  for(i in 1:length(comparison)){
+    output<-cat("#### ",comparison[i]," {.tabset}","\n")
+    topDE.dt <- plot.dt(analysis.type = analysis_type$analysis, comp.folder = comparison,
+                          path.prefix = "../", path.suffix = "/report_data/",
+                          pattern1 = "heatmap_selected_orderBaseMeanCluster.png", pattern2 = "heatmap_selected_orderBaseMeanCluster.png")
+    for(j in 1:length(analysis_type$name)){
+      output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
+      single_topDE <- topDE.dt[analysis.type == analysis_type$analysis[j] & comparison == comparison[i],]$path
+      if(is.na(single_topDE)){
+        output<-c(output,cat("<div align='center'>No DE gene were found from DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1.</div>","\n\n"))
+      }else{
+        output<-c(output,cat("<div align='center'><figure style='width:80%'><img src=",single_topDE," />","\n"))
+        output<-c(output,cat("<figcaption>Heatmap of maximum top 20 differentially expressed genes (DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1).</figcaption></figure>","\n"))
+        output<-c(output,cat("</div>","\n\n"))
       }
-    }else{
-      output<-c(output,cat("<div align='center'>No DE gene were found from DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1.</div>","\n\n"))
     }
+    return(output)
   }
-  output<-c(output,cat("#### {-}","\n\n"))
-  if(length(comparison)>1){
-    for(i in 2:length(comparison)){
-      output<-c(output,cat("#### ",comparison[i],"\n"))
-      for(j in 1:length(analysis_type$DE)){
-        top_de.files <- list.files(path=paste0("../",analysis_type$DE[j],"/",comparison[i],"/report_data/"),
-                               pattern ="heatmap_selected_orderBaseMeanCluster.png", full.names = T)
 
-        output<-c(output,cat("##### ",analysis_type$name[j],"\n"))
-        if(length(top_de.files)>0){
-          if(length(top_de.files)>=1){
-            for(k in 1:length(top_de.files)){
-              output<-c(output,cat("<div align='center'>","\n"))
-              output<-c(output,cat("<figure><img src=",top_de.files[k]," width='80%'/>","\n"))
-              output<-c(output,cat("<figcaption>Heatmap of maximum top 20 differentially expressed genes (DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1).</figcaption></figure>","\n"))
-              output<-c(output,cat("</div>","\n\n"))
-            }
-          }
-        }else{
-          output<-c(output,cat("<div align='center'>No DE gene were found from DESeq2 results with independent filtering, adj.p-value < 0.05, logFC >= +/-1.</div>","\n\n"))
-        }
-      }
-      output<-c(output,cat("#### {-}","\n\n"))
-    }
-  }
-  return(output)
-}
-
-no_null<-top.de.plots(comparison, analysis_type)
+no_null<-top.de.plots(analysis_type, comparison)
 
 ```
 
