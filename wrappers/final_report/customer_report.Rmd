@@ -1577,8 +1577,9 @@ top.de.plots<-function(analysis_type = analysis_type, comparison=comparison){
         output<-c(output,cat("</div>","\n\n"))
       }
     }
-    return(output)
   }
+  return(output)
+}
 
 no_null<-top.de.plots(analysis_type, comparison)
 
