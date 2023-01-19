@@ -794,6 +794,7 @@ if(config_json$display_RSeQC_RNA[1]==TRUE){plotly.rseqc.infer.exp}
 ```{r map-assign, echo=FALSE}
 if(config_json$RSEM[1] == TRUE){
   rsem.assign <- fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
+  rsem.assign <- rsem.assign[,Sample:=as.character(Sample)]
   rsem.assign <- melt(rsem.assign[,.(Sample,Total,Unique,Multi,Filtered,Unalignable)], id.vars = c("Sample","Total"))
   rsem.assign <- rsem.assign[,percentage := round(100*value/Total, 2), by = "Sample"]
 

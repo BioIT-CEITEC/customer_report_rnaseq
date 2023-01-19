@@ -6,16 +6,11 @@ from snakemake.utils import min_version
 min_version("5.18.0")
 configfile: "config.json"
 
-GLOBAL_REF_PATH = "/mnt/references/"
-GLOBAL_TMPD_PATH = "./tmp/"
-
-os.makedirs(GLOBAL_TMPD_PATH, exist_ok=True)
-
-# if not "ref_from_trans_assembly" in config:
-#     config["ref_from_trans_assembly"] = "F"
+GLOBAL_REF_PATH = config["globalResources"]
+GLOBAL_TMPD_PATH = config["globalTmpdPath"]
 
 # setting organism from reference
-f = open(os.path.join(GLOBAL_REF_PATH,"reference_info","reference2.json"))
+f = open(os.path.join(GLOBAL_REF_PATH,"reference_info","reference2.json"),)
 reference_dict = json.load(f)
 f.close()
 
