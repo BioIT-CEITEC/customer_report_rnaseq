@@ -166,8 +166,12 @@ fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" =
 ```{r adaptors, results='asis', echo=FALSE}
 
 if(file.exists(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"))){
- adaptor_max <- fread(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"), header=T)
+ adaptor_max <- fread(paste0(MQC_DATA,"mqc_fastqc_adapter_content_plot_1.txt"), header=T, fill=T)
+ adaptor_max[is.na(adaptor_max)]<-0
+ setnames(adaptor_max, "V1", "Sample")
  adaptor_max <- melt(adaptor_max, id.vars = c("Sample"), value.name = "plot.adaptor.max")
+ adaptor_max <- adaptor_max[Sample != ""]
+ adaptor_max <- adaptor_max[Sample %!like% "raw"]
 }else{
  #adaptor_max <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = c('plots'), plot_opts = list(fastqc_adapter_content_plot= list(extractor = extract_ignore_x, summary = list(max = max), prefix = "adaptor"))) # tidymultiqc v0.1.0
  adaptor_plot <- load_multiqc(paste0(MQC_DATA,"multiqc_data.json"), sections = 'plot', plots = 'fastqc_adapter_content_plot')

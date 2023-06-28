@@ -4,6 +4,10 @@
     "version": 2.0,
     "label": "Customer Report for RNA-Seq and DE analysis",
     "type": "customer_report",
+    "run_parameters": {
+      "cpu": 2,
+      "memory": 65
+    },
     "inputs": [
       "qc_reports/*"
     ],
