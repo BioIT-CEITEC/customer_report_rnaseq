@@ -104,7 +104,8 @@ paired <- ifelse(config_json$is_paired[1] == TRUE, "paired-end", "single-end")
 
 tabl_sample <- fread(paste0(MQC_DATA,"multiqc_cutadapt.txt"), header=T)
 #tabl_sample[, Sample := gsub("_R.","",Sample)]
-if(is.null(tabl_sample$input_reads)==T){tabl_sample[,input_reads:=input_read_pairs]}
+#if(is.null(tabl_sample$input_reads)==T){tabl_sample[,input_reads:=input_read_pairs]}
+tabl_sample <- tabl_sample[,input_reads:=r_processed]
 tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
 setorder(tabl_sample, condition, Sample)
 
@@ -862,11 +863,13 @@ if(config_json$RSEM[1] == TRUE){
 if(config_json$featureCount[1] == TRUE){
   fc.assign <- fread(paste0(MQC_DATA,"multiqc_featureCounts.txt"))
   fc.assign <- fc.assign[,Sample:=as.character(Sample)]
+  fc.assign <- fc.assign[,count_type:=unlist(strsplit(Sample,split="_",fixed=T))[1],by=.(Sample)]
+  fc.assign <- fc.assign[,Sample:=unlist(strsplit(Sample,split="_",fixed=T))[2], by=.(Sample)]
   fc.assign <- merge(config_json[, .(Sample = full_name, condition)], fc.assign, by="Sample")
   setorder(fc.assign, condition, Sample)
 
-  fc.assign <- melt(fc.assign[, percent_assigned:=NULL], id.vars = c("Sample","condition","Total"))
-  fc.assign <- fc.assign[, percentage := round(100*value/Total, 2), by = "Sample"]
+  fc.assign <- melt(fc.assign[, percent_assigned:=NULL], id.vars = c("Sample","condition","count_type","Total"))
+  fc.assign <- fc.assign[, percentage := round(100*value/Total, 2), by = .(Sample,count_type)]
 
   fc.assign.min <- round(min(fc.assign[variable=="Assigned",value]/1E6),0)
   fc.assign.max <- round(max(fc.assign[variable=="Assigned",value]/1E6),0)
