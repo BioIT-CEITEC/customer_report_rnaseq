@@ -13,7 +13,11 @@
     ],
     "inputs_optional":[
       "DE_RSEM/*",
-      "DE_feature_count/*",
+      "DE_featureCount_exon/*",
+      "DE_featureCount_gene/*",
+      "DE_featureCount_transcript/*",
+      "DE_featureCount_3pUTR/*",
+      "DE_featureCount_5pUTR/*",
       "DE_salmon_map/*",
       "DE_salmon_align/*",
       "DE_kallisto/*"
@@ -35,7 +39,8 @@
     "is_paired",
     "reference",
     "keep_not_compared_samples_for_normalization",
-    "feature_count",
+    "featureCount",
+    "count_over",
     "RSEM",
     "kallisto",
     "salmon_align",

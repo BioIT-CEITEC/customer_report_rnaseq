@@ -63,8 +63,24 @@ else:
 
 #
 analysis = []
-if config["feature_count"]:
-    analysis.append("feature_count")
+if config["featureCount"]:
+    count_over_list = config['count_over'].split(",")
+    if ("exon" in count_over_list):
+        config["featureCount_exon"] = True
+        analysis.append("featureCount_exon")
+    if ("gene" in count_over_list):
+        config["featureCount_gene"] = True
+        analysis.append("featureCount_gene")
+    if ("transcript" in count_over_list):
+        config["featureCount_transcript"] = True
+        analysis.append("featureCount_transcript")
+    if ("three_prime_UTR" in count_over_list):
+        config["featureCount_3pUTR"] = True
+        analysis.append("featureCount_3pUTR")
+    if ("five_prime_UTR" in count_over_list):
+        config["featureCount_5pUTR"] = True
+        analysis.append("featureCount_5pUTR")
+
 if config["RSEM"]:
     analysis.append("RSEM")
 if config["salmon_align"]:
