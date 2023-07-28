@@ -51,7 +51,7 @@ config_json[,full_name := sapply(1:length(config_json$samples),function(x) confi
 comparison <- unlist(strsplit(unique(config_json$comparison),split="\\|"))
 biotype <- unlist(strsplit(unique(config_json$biotype_list),split="\\|"))
 analysis_type <- data.table(analysis=unlist(strsplit(unique(config_json$analysis_type),split="\\|")))
-analysis_type <- analysis_type[,DE := paste0("DE_",analysis)] # feature_count is usually run by default
+analysis_type <- analysis_type[,DE := paste0("DE_",analysis)] # featureCount is usually run by default
 analysis_type <- analysis_type[, name := analysis]
 analysis_type <- analysis_type[name == "feature_count", name := "featureCount"]
 analysis_type <- analysis_type[name == "kallisto", name := "Kallisto"]
@@ -102,8 +102,8 @@ umi <- config_json$UMI[1]
 
 paired <- ifelse(config_json$is_paired[1] == TRUE, "paired-end", "single-end")
 
-tabl_sample <- fread(paste0(MQC_DATA,"multiqc_trimmomatic.txt"), header=T)
-tabl_sample[, Sample := gsub("_R.","",Sample)]
+tabl_sample <- fread(paste0(MQC_DATA,"multiqc_cutadapt.txt"), header=T)
+#tabl_sample[, Sample := gsub("_R.","",Sample)]
 if(is.null(tabl_sample$input_reads)==T){tabl_sample[,input_reads:=input_read_pairs]}
 tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
 setorder(tabl_sample, condition, Sample)
@@ -134,13 +134,13 @@ custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 40, 15, custom_
 - Brief sample description and number of raw and preprocessed reads are summarized in Table \@ref(tab:tabl-sample).
 
 ```{r tab.id="tabl-sample", tab.cap="Sample description - condition assignment and number of raw and preprocessed reads.",  results='asis', echo=FALSE, ft.split=F}
-fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" = input_reads, "preprocessed reads" = surviving)])),max_width = 9.1)
+fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" = r_processed, "preprocessed reads" = r_written)])),max_width = 9.1)
 ```
 
 ## Analysis
 - Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**) and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r reference`**).
 - Mapped reads were counted and summarized to genes with:
-`r if(config_json$feature_count[1] == TRUE){"  - **featureCounts**."}`
+`r if(config_json$featureCount[1] == TRUE){"  - **featureCounts**."}`
 `r if(config_json$RSEM[1] == TRUE){"  - **RSEM**."}`
 `r if(config_json$salmon_align[1] == TRUE){"  - **Salmon in alignment mode**."}`
 `r if(config_json$salmon_map[1] == TRUE){"  - **Salmon in mapping mode**."}`
@@ -794,7 +794,7 @@ if(config_json$display_RSeQC_RNA[1]==TRUE){
 if(config_json$display_RSeQC_RNA[1]==TRUE){plotly.rseqc.infer.exp}
 ```
 
-`r if(config_json$RSEM[1] == TRUE | config_json$feature_count[1] == TRUE | config_json$salmon_align[1] == TRUE | config_json$salmon_map[1] == TRUE | config_json$kallisto[1] == TRUE){"### Read count assignment to genes"}`
+`r if(config_json$RSEM[1] == TRUE | config_json$featureCount[1] == TRUE | config_json$salmon_align[1] == TRUE | config_json$salmon_map[1] == TRUE | config_json$kallisto[1] == TRUE){"### Read count assignment to genes"}`
 ```{r map-assign, echo=FALSE}
 if(config_json$RSEM[1] == TRUE){
   rsem.assign <- fread(paste0(MQC_DATA,"multiqc_rsem.txt"))
@@ -859,7 +859,7 @@ if(config_json$RSEM[1] == TRUE){
 
 }
 
-if(config_json$feature_count[1] == TRUE){
+if(config_json$featureCount[1] == TRUE){
   fc.assign <- fread(paste0(MQC_DATA,"multiqc_featureCounts.txt"))
   fc.assign <- fc.assign[,Sample:=as.character(Sample)]
   fc.assign <- merge(config_json[, .(Sample = full_name, condition)], fc.assign, by="Sample")
@@ -1100,34 +1100,34 @@ if(config_json$kallisto[1] == TRUE){
 ```
 
 
-`r if(config_json$feature_count[1] == TRUE){paste0("#### Assignment featureCounts {.tabset}")}`
+`r if(config_json$featureCount[1] == TRUE){paste0("#### Assignment featureCounts {.tabset}")}`
 
-`r if(config_json$feature_count[1] == TRUE){paste0("- Read count assignment from **featureCounts** for RNA-Seq is ",fc.assign.perc," (between ",fc.assign.min.perc,"% and ",fc.assign.max.perc,"%, calculated only from uniquely mapped reads).")}`
-`r if(config_json$feature_count[1] == TRUE){paste0("  - Number of assigned reads is above limits of the recommended number of reads (~",fc.assign.min,"-",fc.assign.max,"M).")}`
-`r if(config_json$feature_count[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:fc-assign-tab) and Figures \\@ref(fig:plotly-fc-assign-pct) to \\@ref(fig:plotly-fc-assign-count).")}`
+`r if(config_json$featureCount[1] == TRUE){paste0("- Read count assignment from **featureCounts** for RNA-Seq is ",fc.assign.perc," (between ",fc.assign.min.perc,"% and ",fc.assign.max.perc,"%, calculated only from uniquely mapped reads).")}`
+`r if(config_json$featureCount[1] == TRUE){paste0("  - Number of assigned reads is above limits of the recommended number of reads (~",fc.assign.min,"-",fc.assign.max,"M).")}`
+`r if(config_json$featureCount[1] == TRUE){paste0("  - Read assignment rates are summarized in Table \\@ref(tab:fc-assign-tab) and Figures \\@ref(fig:plotly-fc-assign-pct) to \\@ref(fig:plotly-fc-assign-count).")}`
 
 ```{r tab.id="fc-assign-tab", tab.cap="Summary of read-to-gene assignment. Percentages counted only from uniquely mapped reads - featureCounts.", results='asis', echo=FALSE, ft.split=F}
-if(config_json$feature_count[1] == TRUE){
+if(config_json$featureCount[1] == TRUE){
   fit_to_width(autofit(qflextable(fc.assign[variable=="Assigned",.(Sample, "Assigned"=value, "Assigned (%)"=percentage)])),max_width = 9.1)
 }
 ```
 
-`r if(config_json$feature_count[1] == TRUE){paste0("##### Percentages (counted over mapping)")}`
+`r if(config_json$featureCount[1] == TRUE){paste0("##### Percentages (counted over mapping)")}`
 ```{r plotly-fc-assign-pct, results='asis', echo=FALSE, fig.cap="featureCounts: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-if(config_json$feature_count[1] == TRUE){plotly.fc.assign.pct}
+if(config_json$featureCount[1] == TRUE){plotly.fc.assign.pct}
 ```
 
-`r if(config_json$feature_count[1] == TRUE){paste0("##### Percentages (counted over reads)")}`
+`r if(config_json$featureCount[1] == TRUE){paste0("##### Percentages (counted over reads)")}`
 ```{r plotly-fc-reassign-pct, results='asis', echo=FALSE, fig.cap="featureCounts: Assignments. Percentage have been recomputed over reads.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-if(config_json$feature_count[1] == TRUE){plotly.fc.reassign.pct}
+if(config_json$featureCount[1] == TRUE){plotly.fc.reassign.pct}
 ```
 
-`r if(config_json$feature_count[1] == TRUE){paste0("##### Number of Reads")}`
+`r if(config_json$featureCount[1] == TRUE){paste0("##### Number of Reads")}`
 ```{r plotly-fc-assign-count, results='asis', echo=FALSE, fig.cap="featureCounts: Assignments.", fig.align="center", out.width="90%", fig.show="hold", dev="svg", fig.width=7, fig.height = custom_height1}
-if(config_json$feature_count[1] == TRUE){plotly.fc.assign.count}
+if(config_json$featureCount[1] == TRUE){plotly.fc.assign.count}
 ```
 
-`r if(config_json$feature_count[1] == TRUE){paste0("#### {-}")}`
+`r if(config_json$featureCount[1] == TRUE){paste0("#### {-}")}`
 
 
 `r if(config_json$RSEM[1] == TRUE){paste0("#### Assignment RSEM {.tabset}")}`
