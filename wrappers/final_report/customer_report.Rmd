@@ -864,7 +864,11 @@ if(config_json$featureCount[1] == TRUE){
   fc.assign <- fread(paste0(MQC_DATA,"multiqc_featureCounts.txt"))
   fc.assign <- fc.assign[,Sample:=as.character(Sample)]
   fc.assign <- fc.assign[,count_type:=unlist(strsplit(Sample,split="_",fixed=T))[1],by=.(Sample)]
-  fc.assign <- fc.assign[,Sample:=unlist(strsplit(Sample,split="_",fixed=T))[2], by=.(Sample)]
+  fc.assign <- fc.assign[,Sample:=gsub("exon_","",
+                                       gsub("gene_","",
+                                            gsub("transcript_","",
+                                                 gsub("3pUTR_","",
+                                                      gsub("5pUTR_","",Sample))))), by=.(Sample)]
   fc.assign <- merge(config_json[, .(Sample = full_name, condition)], fc.assign, by="Sample")
   setorder(fc.assign, condition, Sample)
 
