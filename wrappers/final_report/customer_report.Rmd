@@ -875,11 +875,28 @@ if(config_json$featureCount[1] == TRUE){
   fc.assign <- melt(fc.assign[, percent_assigned:=NULL], id.vars = c("Sample","condition","count_type","Total"))
   fc.assign <- fc.assign[, percentage := round(100*value/Total, 2), by = .(Sample,count_type)]
 
-  fc.assign.min <- round(min(fc.assign[variable=="Assigned",value]/1E6),0)
-  fc.assign.max <- round(max(fc.assign[variable=="Assigned",value]/1E6),0)
-  fc.assign.min.perc <- round(min(fc.assign[variable=="Assigned",percentage]),0)
-  fc.assign.max.perc <- round(max(fc.assign[variable=="Assigned",percentage]),0)
-  fc.assign.mean.perc <- round(mean(fc.assign[variable=="Assigned",percentage]),2)
+  fc.values<-function(fc.assign, count_type="exon"){
+    fc.assign.min <- round(min(fc.assign[count_type == count_type & variable=="Assigned",value]/1E6),0)
+    fc.assign.max <- round(max(fc.assign[count_type == count_type & variable=="Assigned",value]/1E6),0)
+    fc.assign.min.perc <- round(min(fc.assign[count_type == count_type & variable=="Assigned",percentage]),0)
+    fc.assign.max.perc <- round(max(fc.assign[count_type == count_type & variable=="Assigned",percentage]),0)
+    fc.assign.mean.perc <- round(mean(fc.assign[count_type == count_type & variable=="Assigned",percentage]),2)
+    return(list(fc.assign.min,fc.assign.max,fc.assign.min.perc,fc.assign.max.perc,fc.assign.mean.perc))
+  }
+
+  if("exon" %in% fc.assign$count_type){
+    fc.val<-fc.values(fc.assign, count_type="exon")
+  }else if("exon" %!in% fc.assign$count_type & "gene" %in% fc.assign$count_type){
+    fc.val<-fc.values(fc.assign, count_type="gene")
+  }else if("exon" %!in% fc.assign$count_type & "gene" %!in% fc.assign$count_type & "transcript" %in% fc.assign$count_type){
+    fc.val<-fc.values(fc.assign, count_type="transcript")
+  }
+
+  fc.assign.min <- fc.val[1]
+  fc.assign.max <- fc.val[2]
+  fc.assign.min.perc <- fc.val[3]
+  fc.assign.max.perc <- fc.val[4]
+  fc.assign.mean.perc <- fc.val[5]
 
   if(fc.assign.mean.perc > 60){
     fc.assign.perc <- "very high"
