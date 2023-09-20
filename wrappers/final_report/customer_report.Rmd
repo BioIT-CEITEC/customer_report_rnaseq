@@ -103,9 +103,10 @@ umi <- config_json$UMI[1]
 paired <- ifelse(config_json$is_paired[1] == TRUE, "paired-end", "single-end")
 
 tabl_sample <- fread(paste0(MQC_DATA,"multiqc_cutadapt.txt"), header=T)
-#tabl_sample[, Sample := gsub("_R.","",Sample)]
+tabl_sample[, Sample := gsub("_R.","",Sample)]
 #if(is.null(tabl_sample$input_reads)==T){tabl_sample[,input_reads:=input_read_pairs]}
-tabl_sample <- tabl_sample[,input_reads:=r_processed]
+tabl_sample <- tabl_sample[,input_reads:=ifelse("r_processed" %in% names(tabl_sample),r_processed,pairs_processed),by=.(Sample)]
+tabl_sample <- tabl_sample[,output_reads:=ifelse("r_written" %in% names(tabl_sample),r_written,pairs_written),by=.(Sample)]
 tabl_sample <- merge(config_json[, .(Sample = full_name, condition)], tabl_sample, by="Sample")
 setorder(tabl_sample, condition, Sample)
 
@@ -135,7 +136,7 @@ custom_height2 <- ifelse(paired == "paired-end" & num_samples >= 40, 15, custom_
 - Brief sample description and number of raw and preprocessed reads are summarized in Table \@ref(tab:tabl-sample).
 
 ```{r tab.id="tabl-sample", tab.cap="Sample description - condition assignment and number of raw and preprocessed reads.",  results='asis', echo=FALSE, ft.split=F}
-fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" = r_processed, "preprocessed reads" = r_written)])),max_width = 9.1)
+fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" = input_reads, "preprocessed reads" = output_reads)])),max_width = 9.1)
 ```
 
 ## Analysis
