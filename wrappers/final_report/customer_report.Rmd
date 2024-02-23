@@ -454,10 +454,10 @@ if(config_json$display_RSeQC_RNA[1]==TRUE){
   rseqc.count <- names(rseqc.metric)[names(rseqc.metric) %like% "tag_count"]
   rseqc.metric.tbl <- cbind(rseqc.metric[,.(Sample,total_tags)], rseqc.metric[, ..rseqc.count])
   #rseqc.metric.tbl <- rseqc.metric.tbl[, other_intergenic_tag_pct := 100-rowSums(.SD), .SDcols = 2:11]
-  rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (true_tss_up_5kb_tag_count = tss_up_1kb-5kb_tag_count,
-                                               true_tss_up_10kb_tag_count = tss_up_5kb-10kb_tag_count,
-                                               true_tes_down_5kb_tag_count = tes_down_1kb-5kb_tag_count,
-                                               true_tes_down_10kb_tag_count = tes_down_5kb-10kb_tag_count)]
+  rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (true_tss_up_5kb_tag_count = `tss_up_1kb-5kb_tag_count`,
+                                               true_tss_up_10kb_tag_count = `tss_up_5kb-10kb_tag_count`,
+                                               true_tes_down_5kb_tag_count = `tes_down_1kb-5kb_tag_count`,
+                                               true_tes_down_10kb_tag_count = `tes_down_5kb-10kb_tag_count`)]
   rseqc.metric.tbl <- rseqc.metric.tbl[, `:=` (tss_up_5kb_tag_count = NULL,
                                                tss_up_10kb_tag_count = NULL,
                                                tes_down_5kb_tag_count = NULL,
