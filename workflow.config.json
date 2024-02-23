@@ -1,7 +1,7 @@
 {
   "workflow_description": {
     "name": "customer_report_RNA",
-    "version": 2.0,
+    "version": 2.2,
     "label": "Customer Report for RNA-Seq and DE analysis",
     "type": "customer_report",
     "run_parameters": {
