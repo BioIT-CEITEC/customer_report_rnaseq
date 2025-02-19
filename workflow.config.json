@@ -1,7 +1,7 @@
 {
   "workflow_description": {
     "name": "customer_report_RNA",
-    "version": 2.2,
+    "version": 3.0,
     "label": "Customer Report for RNA-Seq and DE analysis",
     "type": "customer_report",
     "run_parameters": {
@@ -18,6 +18,11 @@
       "DE_featureCount_transcript/*",
       "DE_featureCount_3pUTR/*",
       "DE_featureCount_5pUTR/*",
+      "DE_HTSeqCount_exon/*",
+      "DE_HTSeqCount_gene/*",
+      "DE_HTSeqCount_transcript/*",
+      "DE_HTSeqCount_3pUTR/*",
+      "DE_HTSeqCount_5pUTR/*",
       "DE_salmon_map/*",
       "DE_salmon_align/*",
       "DE_kallisto/*"
@@ -37,9 +42,12 @@
   ],
   "requested_params": [
     "is_paired",
-    "reference",
+    "organism",
+    "assembly",
+    "release",
     "keep_not_compared_samples_for_normalization",
     "featureCount",
+    "HTSeqCount",
     "count_over",
     "RSEM",
     "kallisto",

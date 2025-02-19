@@ -9,29 +9,19 @@ configfile: "config.json"
 GLOBAL_REF_PATH = config["globalResources"]
 GLOBAL_TMPD_PATH = config["globalTmpdPath"]
 
-# setting organism from reference
-f = open(os.path.join(GLOBAL_REF_PATH,"reference_info","reference2.json"),)
-reference_dict = json.load(f)
-f.close()
+##### BioRoot utilities #####
+module BR:
+    snakefile: github("BioIT-CEITEC/bioroots_utilities", path="bioroots_utilities.smk",branch="master")
+    config: config
 
-config["species_name"] = [organism_name for organism_name in reference_dict.keys() if isinstance(reference_dict[organism_name],dict) and config["reference"] in reference_dict[organism_name].keys()][0]
-config["organism"] = config["species_name"].split(" (")[0].lower().replace(" ","_")
-if len(config["species_name"].split(" (")) > 1:
-    config["species"] = config["species_name"].split(" (")[1].replace(")","")
-
+use rule * from BR as other_*
 
 ##### Config processing #####
-# Folders
-#
-#reference_directory = os.path.join(GLOBAL_REF_PATH,config["organism"],config["reference"])
 
-# Samples
-#
-sample_tab = pd.DataFrame.from_dict(config["samples"],orient="index")
+sample_tab = BR.load_sample()
+config = BR.load_organism()
 
-if (sample_tab.condition == "").all():
-    raise ValueError("There are no conditions set for samples!")
-
+##### Comparison processing #####
 
 def get_comparison_dir_list(condition_list):
     comparison_dir_list = list()
@@ -80,6 +70,24 @@ if config["featureCount"]:
     if ("five_prime_UTR" in count_over_list):
         config["featureCount_5pUTR"] = True
         analysis.append("featureCount_5pUTR")
+
+if config["HTSeqCount"]:
+    count_over_list = config['count_over'].split(",")
+    if ("exon" in count_over_list):
+        config["HTSeqCount_exon"] = True
+        analysis.append("HTSeqCount_exon")
+    if ("gene" in count_over_list):
+        config["HTSeqCount_gene"] = True
+        analysis.append("HTSeqCount_gene")
+    if ("transcript" in count_over_list):
+        config["HTSeqCount_transcript"] = True
+        analysis.append("HTSeqCount_transcript")
+    if ("three_prime_UTR" in count_over_list):
+        config["HTSeqCount_3pUTR"] = True
+        analysis.append("HTSeqCount_3pUTR")
+    if ("five_prime_UTR" in count_over_list):
+        config["HTSeqCount_5pUTR"] = True
+        analysis.append("HTSeqCount_5pUTR")
 
 if config["RSEM"]:
     analysis.append("RSEM")

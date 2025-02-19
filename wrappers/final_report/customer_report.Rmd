@@ -86,7 +86,9 @@ biobloom_ref<-biobloom_ref[species==config_json$species[1],]
 # Description
 ```{r samples, results='asis', echo=FALSE}
 species <- config_json$species[1]
-reference <- config_json$reference[1]
+organism <- config_json$organism[1]
+assembly <- config_json$assembly[1]
+release <- config_json$release[1]
 num_samples <- length(config_json[,full_name])
 num_conditions <- length(unique(config_json$condition))
 num_replicat <- length(unique(config_json$replicate))
@@ -140,7 +142,7 @@ fit_to_width(autofit(qflextable(tabl_sample[, .(Sample, condition, "raw reads" =
 ```
 
 ## Analysis
-- Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Trimmomatic, FastQC, MultiQC**) and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r reference`**).
+- Raw reads were quality checked (**FastQC, MultiQC, minion, swan**), preprocessed (**Cutadapt, FastQC, MultiQC**) and mapped (**STAR, Samtools, MultiQC**) to the reference genome with gene annotation (**genome version: `r release`**).
 - Mapped reads were counted and summarized to genes with:
 `r if(config_json$featureCount[1] == TRUE){"  - **featureCounts**."}`
 `r if(config_json$RSEM[1] == TRUE){"  - **RSEM**."}`
@@ -297,7 +299,7 @@ for(i in 1:length(star.labcol.count$variable)){
 
 ```
 
-- The `r paired` reads were aligned to `r species` reference genome with the help of the gene annotation (`r reference`) using STAR aligner.
+- The `r paired` reads were aligned to `r species` reference genome with the help of the gene annotation (`r release`) using STAR aligner.
 - The percentage of uniquely- and multi-mapped reads are `r map.perc` for all samples (~`r map.mean.perc`% with ~`r uni.map.mean.perc`% of uniquely-mapped and ~`r multi.map.mean.perc`% of multi-mapped),
 and the total number of mapped reads varies between ~`r map.min`M for `r tabl_mapread[mapped == min(mapped),]$Sample` and ~`r map.max`M for `r tabl_mapread[mapped == max(mapped),]$Sample` (Table \@ref(tab:tabl-mapread), Figure \@ref(fig:star-map-perc) & \@ref(fig:star-map-count)).
 
@@ -1341,7 +1343,7 @@ if(config_json$display_biotypes_RNA[1] == TRUE){plotly.mybar.count}
 ## Visualization
 
 ### IGV
-- Reference genomes and annotations for `r reference` are available to download on [Ensembl](https://www.ensembl.org/index.html) website.
+- Reference genomes and annotations for `r release` are available to download on [Ensembl](https://www.ensembl.org/index.html) website.
 - You can upload the provided aligned bam files with the reference in IGV for visualization.
 - The IGV tutorial is available [here](http://software.broadinstitute.org/software/igv/userguide).
 - All the index files (.bai, .fai, .idx) must be in the same folder as their "parent" files otherwise IGV wouldn't open them.
