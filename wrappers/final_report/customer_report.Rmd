@@ -328,7 +328,7 @@ if(config_json$display_fastq_screen_RNA[1] == TRUE){
   fastq.screen.files <- fread(paste0(MQC_DATA,"multiqc_fastq_screen.txt"))
   #fastq.screen.files <- merge(config_json[, .(Sample = full_name, condition)], fastq.screen.files[, Sample := gsub("_screen$","",Sample)], by="Sample")
   fastq.screen.files <- fastq.screen.files[, Sample := gsub("_screen$","",Sample)]
-  fastq.screen.files <- fastq.screen.files[Sample %like% config_json$full_name,]
+  fastq.screen.files <- fastq.screen.files[Sample %like% paste(config_json$full_name, collapse="|"),]
 
   rrna <- fastq.screen.files[, .(Sample, rRNA.perc=get("rRNA percentage"))]
 
